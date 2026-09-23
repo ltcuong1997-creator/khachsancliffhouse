@@ -99,6 +99,19 @@ firebase deploy --only hosting
 
 Xong sẽ chạy ở `https://khachsancliffhouse.web.app`
 
+### Tự deploy khi merge vào `main`
+
+`.github/workflows/deploy.yml` tự chạy lệnh trên mỗi khi `main` có code mới. Chỉ cần làm một lần:
+
+1. Firebase Console → ⚙️ **Project settings** → **Service accounts** → **Generate new private key**
+   → tải về một file `.json`.
+2. GitHub repo → **Settings** → **Secrets and variables** → **Actions** → **New repository secret**.
+   Name: `FIREBASE_SERVICE_ACCOUNT`, Secret: dán **toàn bộ** nội dung file `.json`.
+3. Xoá file `.json` trên máy. Không commit nó vào repo.
+
+Xem tiến trình ở tab **Actions** của repo; muốn deploy lại bằng tay thì bấm **Run workflow**.
+`firestore.rules` không tự deploy — sửa rules thì vẫn chạy `firebase deploy --only firestore:rules`.
+
 ---
 
 ## Dữ liệu nằm ở đâu trên Firestore
