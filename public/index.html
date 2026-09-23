@@ -1,0 +1,3238 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F7F5F4">
+<meta name="apple-mobile-web-app-title" content="Cliff House">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Cliff House — Quản trị khách sạn</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=K2D:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   NỀN NGÀ, THẺ NỔI, KHÔNG VIỀN NGĂN
+   ---------------------------------------------------------------------
+   Dựng theo đúng nguyên tắc của ZSpace: NỀN NGÀ chạy liền mạch cho cả trang, cột menu, thanh trên
+   và mọi khe hở giữa các thẻ — chỉ THẺ NỘI DUNG mới trắng tinh. Mắt tự tách được "vùng ngà =
+   điều hướng / vùng trắng = làm việc" mà không cần một đường kẻ nào, nên bỏ được toàn bộ viền.
+   Chiều sâu đến từ BÓNG NHIỀU TẦNG chứ không phải nghiêng/xoay: một tầng sát viền cho nét, hai
+   tầng rộng rất nhạt cho độ nổi. Bảng số liệu vẫn phẳng để còn gõ được.
+   Màu thương hiệu là vàng đồng của khách sạn, không lấy xanh ngọc của ZSpace.
+   ===================================================================== */
+:root{
+  --ink:#14181C;
+  --ink-2:#1F252B;
+  --canvas:#F7F5F4;          /* ngà ấm — nền của TẤT CẢ trừ thẻ */
+  --card:#FFFFFF;
+  --line:#E8E5E3;
+  --line-soft:#F1EFED;
+  --txt:#14181C;
+  --txt-2:#5A6068;
+  --txt-3:#8B9199;
+  --brand:#B07D2B;
+  --brand-dark:#8C6220;
+  --brand-bright:#D9A23F;
+  --brand-wash:#FAF3E4;
+  --green:#12875A;
+  --green-wash:#E6F4EE;
+  --red:#C4443C;
+  --red-wash:#FBECEB;
+  --blue:#2F6DB5;
+  --blue-wash:#EAF1FA;
+  --violet:#6C5CE7;
+  --violet-wash:#EFEDFE;
+  --amber:#D98A0B;
+  --amber-wash:#FDF3E0;
+  --r:12px; --r-l:18px; --r-xl:24px;
+  /* Ba tầng bóng: sát viền cho nét, rộng vừa cho khối, rộng rất nhạt cho độ cao */
+  --sh-1:0 1px 2px rgba(20,24,28,.05), 0 4px 10px rgba(20,24,28,.05);
+  --sh-card:0 1px 2px rgba(20,24,28,.05), 0 5px 14px rgba(20,24,28,.055), 0 16px 40px rgba(20,24,28,.05);
+  --sh-up:0 2px 4px rgba(20,24,28,.05), 0 8px 18px rgba(20,24,28,.07), 0 26px 52px rgba(20,24,28,.08);
+  --sh-brand:0 4px 12px rgba(176,125,43,.26);
+  --sans:'K2D', system-ui, -apple-system, sans-serif;
+  --nav-w:240px;
+  --top-h:64px;
+  /* Nhịp chung của mọi chuyển động chậm — cùng một đường cong thì cả app đi cùng một nhịp thở */
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{font-family:var(--sans);background:var(--canvas);color:var(--txt);font-size:14.5px;line-height:1.5;-webkit-font-smoothing:antialiased;overscroll-behavior-y:contain}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer;border:none;background:none}
+a{color:inherit;text-decoration:none}
+svg{flex-shrink:0}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:#DAD6D3;border-radius:9px}
+::-webkit-scrollbar-track{background:transparent}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:6px}
+.mono{font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.02em;color:var(--txt-3)}
+.hint{font-size:12px;color:var(--txt-3);line-height:1.5}
+
+/* ================= KHUNG ================= */
+.shell{display:flex;min-height:100vh;min-height:100dvh}
+/* Đổi đúng một biến --nav-w là cả cột menu lẫn lề trái vùng làm việc đi theo */
+.shell.nav-min{--nav-w:76px}
+.nav{width:var(--nav-w);flex:0 0 var(--nav-w);background:var(--canvas);color:var(--txt);
+  display:flex;flex-direction:column;position:fixed;inset:0 auto 0 0;z-index:40;padding:4px 12px 0}
+.nav-brand{padding:16px 6px 14px;display:flex;align-items:center;gap:11px}
+.logo{width:38px;height:38px;border-radius:12px;flex:0 0 38px;overflow:hidden;
+  background:linear-gradient(150deg,var(--brand-bright),var(--brand-dark));
+  display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:15px;
+  letter-spacing:-.02em;box-shadow:var(--sh-brand)}
+/* Dùng nguyên ảnh toà nhà, không cắt xén. Ảnh gốc vuông 428x428 nên vừa khít ô vuông,
+   object-fit:cover chỉ để phòng trường hợp sau này thay bằng ảnh không vuông. */
+.logo img{width:100%;height:100%;object-fit:cover;display:block}
+.nav-nm{min-width:0}
+.nav-brand b{font-size:15px;font-weight:700;letter-spacing:-.01em;display:block;line-height:1.15;color:var(--txt)}
+.nav-brand small{font-size:10px;color:var(--txt-3);letter-spacing:.1em;text-transform:uppercase;font-weight:600}
+.nav-min-btn{margin-left:auto;width:30px;height:30px;border-radius:9px;color:var(--txt-3);
+  display:flex;align-items:center;justify-content:center;flex:0 0 30px;transition:background .16s,color .16s}
+.nav-min-btn:hover{background:rgba(20,24,28,.06);color:var(--txt)}
+/* Bỏ hẳn thanh cuộn xám của cột menu — vẫn cuộn được bằng con lăn / vuốt */
+.nav-scroll{flex:1;overflow-y:auto;padding:0 0 14px;position:relative;scrollbar-width:none;-ms-overflow-style:none}
+.nav-scroll::-webkit-scrollbar{display:none;width:0;height:0}
+.nav-group{margin:15px 0 5px;padding:0 10px;font-size:11px;font-weight:600;letter-spacing:.02em;
+  color:var(--txt-3);white-space:nowrap;overflow:hidden}
+.nav-item{display:flex;align-items:center;gap:11px;width:100%;padding:8px 11px;border-radius:10px;
+  color:var(--txt-2);font-weight:500;font-size:14px;margin-bottom:2px;text-align:left;
+  position:relative;z-index:1;transition:color .2s,background-color .2s}
+.nav-item:hover{background:rgba(20,24,28,.05);color:var(--txt)}
+.nav-item .ic{width:18px;height:18px;flex:0 0 18px;color:var(--txt-3);transition:color .2s}
+/* Mục đang mở KHÔNG tự tô nền — viên pill .nav-hl trượt tới nằm dưới nó mới là cái tô màu */
+.nav-item.on{background:transparent;color:#fff;font-weight:600}
+.nav-item.on .ic{color:#fff}
+.nav-lb{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Viên highlight trượt: JS đo vị trí mục đang mở (useHlRect), CSS chỉ lo trượt top/height */
+.nav-hl{position:absolute;left:0;right:0;border-radius:10px;background:var(--brand);
+  box-shadow:var(--sh-brand);z-index:0;pointer-events:none;
+  transition:top .5s var(--ease),height .5s var(--ease)}
+.nav-foot{border-top:1px solid var(--line);padding:12px 2px 16px;margin-top:auto}
+.nav-user{display:flex;align-items:center;gap:10px;padding:9px;border-radius:12px;
+  background:var(--card);box-shadow:var(--sh-1)}
+.nav-user b{font-size:13px;display:block;line-height:1.25;color:var(--txt)}
+.nav-user small{font-size:11px;color:var(--txt-3);display:block}
+.av{width:30px;height:30px;border-radius:99px;flex:0 0 30px;background:var(--brand);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px}
+.nav-out{margin-top:8px;width:100%;padding:8px;border-radius:10px;background:var(--card);
+  color:var(--txt-2);font-size:13px;font-weight:600;box-shadow:var(--sh-1);transition:color .16s,box-shadow .2s}
+.nav-out:hover{color:var(--red);box-shadow:var(--sh-up)}
+
+/* ---- MENU THU GỌN: chỉ còn dải icon ---- */
+.nav-min .nav-brand{flex-direction:column;gap:10px;padding:16px 0 12px}
+.nav-min .nav-nm{display:none}
+.nav-min .nav-min-btn{margin-left:0}
+.nav-min .nav-item{justify-content:center;padding:10px 0;gap:0}
+.nav-min .nav-lb{display:none}
+.nav-min .nav-hl{right:auto;width:52px}
+/* Nhãn nhóm thu lại thành một vạch mảnh — vẫn thấy ranh giới nhóm mà không tốn dòng chữ */
+.nav-min .nav-group{height:1px;padding:0;margin:10px 14px;background:var(--line);color:transparent;overflow:hidden;font-size:0}
+.nav-min .nav-foot{padding:12px 0 16px}
+.nav-min .nav-user{justify-content:center;padding:6px}
+.nav-min .nav-user .who{display:none}
+.nav-min .nav-out{font-size:0;padding:9px 0}
+.nav-min .nav-out::before{content:'⏻';font-size:14px}
+/* ---- Rê chuột vào một icon thì ĐÚNG mục đó dãn ngang ra hiện tên ----
+   Khó ở chỗ .nav-scroll phải overflow-y:auto (menu dài hơn màn hình), mà overflow-y khác visible là
+   trình duyệt ép luôn overflow-x -> nhãn dãn ra ngoài 76px bị cắt mất. Cách gỡ của ZSpace: cho vùng
+   cuộn RỘNG hẳn ra đè lên nội dung trang nhưng trong suốt và pointer-events:none — chỉ riêng từng
+   mục menu nhận chuột. Chỗ trống bên phải vẫn bấm xuyên xuống trang như thường, con lăn trên icon
+   vẫn cuộn menu vì sự kiện cuộn đi theo cây phần tử chứ không theo vùng bắt chuột. */
+@media(hover:hover) and (min-width:961px){
+  .nav-min .nav-scroll{width:340px;overflow-x:hidden;pointer-events:none;padding-right:20px}
+  /* Vùng cuộn phải rộng 340px thì nhãn mới dãn ra ngoài được, nhưng vạch ngăn nhóm là khối
+     block nên nó ăn theo luôn 340px và kẻ một đường dài tràn ra giữa trang. Chốt cứng bề ngang
+     đúng bằng dải icon: 52px pill trừ 2×14px lề = 24px, nằm gọn chính giữa cột. */
+  .nav-min .nav-group{width:24px}
+  .nav-min .nav-item{pointer-events:auto;width:fit-content;min-width:52px;max-width:52px;
+    justify-content:flex-start;padding:10px 16px 10px 17px;gap:12px;overflow:hidden;white-space:nowrap;
+    transition:max-width .42s var(--ease),background-color .2s,box-shadow .3s,color .2s}
+  .nav-min .nav-lb{display:inline;opacity:0;transform:translateX(-8px);
+    transition:opacity .18s ease,transform .38s var(--ease)}
+  .nav-min .nav-item:hover{max-width:280px;z-index:3;background:var(--card);color:var(--txt);box-shadow:var(--sh-up)}
+  .nav-min .nav-item.on:hover{background:var(--brand);color:#fff;box-shadow:var(--sh-brand)}
+  .nav-min .nav-item:hover .nav-lb{opacity:1;transform:none;transition-delay:.06s}
+}
+
+.main{flex:1;margin-left:var(--nav-w);min-width:0;display:flex;flex-direction:column}
+/* Thanh trên cùng nền ngà, không viền dưới — chỉ hơi mờ khi nội dung trượt qua bên dưới */
+.topbar{height:var(--top-h);background:rgba(247,245,244,.78);backdrop-filter:blur(14px) saturate(160%);
+  -webkit-backdrop-filter:blur(14px) saturate(160%);display:flex;align-items:center;gap:14px;
+  padding:0 22px;position:sticky;top:0;z-index:30}
+.topbar h1{font-size:20px;font-weight:700;margin:0;letter-spacing:-.02em;line-height:1.25}
+.topbar .sub{font-size:12px;color:var(--txt-3);font-weight:500;line-height:1.3}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:9px}
+.top-date{font-size:13px;font-weight:600;color:var(--txt-3);background:var(--card);border-radius:99px;
+  padding:7px 13px;box-shadow:var(--sh-1);white-space:nowrap;transition:box-shadow .2s}
+.top-date:hover{box-shadow:var(--sh-up)}
+/* Vùng làm việc dùng trọn bề ngang: thu gọn menu là bảng tự rộng thêm đúng 164px */
+.page{padding:20px 22px 40px;max-width:none;width:100%}
+
+/* ================= MẢNH GHÉP ================= */
+/* Thẻ: bỏ viền, nổi bằng bóng, bo tròn hơn */
+.card{background:var(--card);border:none;border-radius:var(--r-l);box-shadow:var(--sh-card);
+  margin-bottom:16px;overflow:hidden;transition:box-shadow .3s cubic-bezier(.22,1,.36,1)}
+.card:hover{box-shadow:var(--sh-up)}
+/* Thẻ lồng trong thẻ phải CHÌM xuống, không được nổi chồng lên nhau */
+.card .card{box-shadow:none;background:var(--canvas);border-radius:14px}
+.card .card:hover{box-shadow:none}
+.card-h{padding:15px 18px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.card-h h3{margin:0;font-size:15px;font-weight:700;letter-spacing:-.01em}
+.card-h p{margin:1px 0 0;font-size:12px;color:var(--txt-3)}
+.card-h .sp{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.card-b{padding:18px}
+
+.btn{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:10px;
+  background:var(--card);border:1px solid transparent;font-size:13px;font-weight:600;
+  box-shadow:var(--sh-1);transition:box-shadow .22s,background .16s,color .16s;white-space:nowrap}
+.btn:hover{background:#fff;box-shadow:var(--sh-up)}
+.btn.pri{background:var(--brand);color:#fff;box-shadow:var(--sh-brand)}
+.btn.pri:hover{background:var(--brand-dark);box-shadow:0 8px 22px rgba(176,125,43,.3)}
+.btn.dark{background:var(--ink);color:#fff;box-shadow:0 4px 14px rgba(20,24,28,.2)}
+.btn.dark:hover{background:var(--ink-2);box-shadow:0 8px 22px rgba(20,24,28,.26)}
+.btn.danger{color:var(--red)}
+.btn.danger:hover{background:var(--red-wash)}
+.btn.sm{padding:5px 10px;font-size:12px;border-radius:9px}
+.btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:var(--sh-1)}
+
+.inp{width:100%;padding:8px 11px;border-radius:10px;border:1px solid var(--line);background:#fff;
+  font-size:13.5px;transition:border-color .16s,box-shadow .16s}
+.inp:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(176,125,43,.13)}
+.inp.num{text-align:right;font-variant-numeric:tabular-nums}
+select.inp{cursor:pointer}
+select.inp:hover{border-color:#D8D3D0}
+.fld{margin-bottom:12px}
+.fld label{display:block;font-size:12px;font-weight:600;color:var(--txt-2);margin-bottom:5px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+
+.tag{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:99px;font-size:11.5px;font-weight:700;white-space:nowrap}
+.t-gray{background:#EFEDEB;color:var(--txt-2)}
+.t-green{background:var(--green-wash);color:var(--green)}
+.t-red{background:var(--red-wash);color:var(--red)}
+.t-amber{background:var(--amber-wash);color:#8A6008}
+.t-blue{background:var(--blue-wash);color:var(--blue)}
+.t-brand{background:var(--brand-wash);color:var(--brand-dark)}
+.t-violet{background:var(--violet-wash);color:var(--violet)}
+
+.scroll-x{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table.tb{width:100%;border-collapse:collapse;font-size:13.5px}
+table.tb th{text-align:left;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--txt-3);padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--card)}
+table.tb td{padding:10px 12px;border-bottom:1px solid var(--line-soft);vertical-align:middle}
+table.tb tr:last-child td{border-bottom:none}
+table.tb tbody tr:hover{background:#FBFAF9}
+table.tb .r{text-align:right;font-variant-numeric:tabular-nums}
+table.tb tfoot td{padding:11px 12px;border-top:2px solid var(--line);font-weight:700;background:#FBFAF9}
+.empty{padding:40px 20px;text-align:center;color:var(--txt-3);font-size:13.5px}
+
+/* ================= CHỈ SỐ ================= */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:16px}
+.stat{background:var(--card);border:none;border-radius:var(--r-l);padding:15px 17px;
+  box-shadow:var(--sh-card);position:relative;overflow:hidden;transition:box-shadow .3s cubic-bezier(.22,1,.36,1)}
+.stat:hover{box-shadow:var(--sh-up)}
+.stat .lb{font-size:11.5px;font-weight:500;color:var(--txt-3);display:flex;align-items:center;gap:7px;margin-bottom:7px}
+.stat .ic-sq{width:26px;height:26px;border-radius:9px;flex:0 0 26px;background:var(--canvas);
+  display:flex;align-items:center;justify-content:center;font-size:13px}
+.stat .vl{font-size:24px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1.15}
+.stat .dt{font-size:11.5px;color:var(--txt-3);margin-top:5px;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+/* Thẻ nổi bật: khối tối đặc, là điểm neo mắt của cả hàng chỉ số */
+.stat.hero{background:linear-gradient(140deg,var(--ink),#242C33);color:#fff;box-shadow:0 2px 4px rgba(20,24,28,.1),0 10px 24px rgba(20,24,28,.18),0 28px 56px rgba(20,24,28,.16)}
+.stat.hero:hover{box-shadow:0 4px 8px rgba(20,24,28,.12),0 14px 30px rgba(20,24,28,.22),0 34px 66px rgba(20,24,28,.2)}
+.stat.hero .lb{color:#9AA4AD}
+.stat.hero .dt{color:#8D97A0}
+.stat.hero .ic-sq{background:rgba(255,255,255,.1)}
+.up{color:var(--green);font-weight:700}
+.dn{color:var(--red);font-weight:700}
+.stat.hero .up{color:#3FCB8E}
+.stat.hero .dn{color:#F08078}
+
+/* ================= BIỂU ĐỒ ================= */
+.chart-wrap{padding:8px 18px 18px}
+.bar-row{display:flex;align-items:center;gap:12px;padding:6px 0;border-radius:9px;transition:background .16s}
+.bar-row .nm{width:190px;flex:0 0 190px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:7px;min-width:0}
+.bar-row .nm span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-track{flex:1;height:22px;background:var(--line-soft);border-radius:7px;overflow:hidden;min-width:40px}
+.bar-fill{height:100%;border-radius:7px;transition:width .9s cubic-bezier(.22,1,.36,1)}
+.bar-row .vl{width:120px;flex:0 0 120px;text-align:right;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.bar-row .pc{width:52px;flex:0 0 52px;text-align:right;font-size:11.5px;color:var(--txt-3);font-variant-numeric:tabular-nums}
+/* Cùng danh sách thanh ngang nhưng nằm trong cột hẹp: bóp tên lại và bỏ cột phần trăm,
+   không thì con số bên phải bị cắt mất đuôi */
+.bars-tight .nm{width:104px;flex:0 0 104px;font-size:12.5px}
+.bars-tight .vl{width:104px;flex:0 0 104px;font-size:12.5px}
+.bars-tight .pc{display:none}
+
+/* ================= BẢNG CÔNG ================= */
+.ts-wrap{overflow:auto;max-height:70vh;border-radius:14px;background:var(--canvas)}
+table.ts{border-collapse:separate;border-spacing:0;font-size:12.5px;white-space:nowrap;background:var(--card)}
+table.ts th,table.ts td{border-right:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft);padding:0}
+table.ts thead th{position:sticky;top:0;z-index:3;background:var(--card);font-size:10.5px;font-weight:700;
+  color:var(--txt-3);height:34px;padding:0 4px;text-align:center;min-width:38px}
+table.ts thead th.we{background:var(--brand-wash);color:var(--brand-dark)}
+table.ts .fix{position:sticky;left:0;z-index:2;background:#fff;min-width:190px;max-width:190px;padding:7px 11px;white-space:normal}
+table.ts thead .fix{z-index:4;background:var(--card)}
+table.ts tbody tr:hover .fix{background:#FBFAF9}
+table.ts .fix b{font-size:13px;font-weight:600;display:block;line-height:1.25}
+table.ts .fix small{font-size:11px;color:var(--txt-3)}
+table.ts td.cell{text-align:center}
+table.ts td.cell input{width:100%;height:32px;border:none;background:none;text-align:center;
+  font-size:12.5px;font-variant-numeric:tabular-nums;font-weight:600;padding:0}
+table.ts td.cell input:focus{outline:2px solid var(--brand);outline-offset:-2px;background:var(--brand-wash);border-radius:5px}
+table.ts td.cell.we{background:#FDFBF6}
+table.ts td.cell.has{background:var(--green-wash)}
+table.ts td.cell.has input{color:var(--green)}
+table.ts .tot{position:sticky;right:0;z-index:2;background:#FBFAF9;min-width:86px;text-align:right;
+  padding:7px 11px;font-weight:700;font-variant-numeric:tabular-nums}
+table.ts thead .tot{z-index:4}
+
+/* ================= CHẤM CÔNG TRÊN ĐIỆN THOẠI =================
+   Bảng 31 cột không dùng được trên màn 375px: kéo ngang tìm đúng ô của đúng người là việc
+   không ai làm nổi hai lần. Trên màn hẹp đổi hẳn cách: chọn người trước, rồi gõ công cho
+   người đó trên một tờ lịch tháng — mỗi ngày một ô to, bấm trúng bằng ngón tay. */
+.ts-person{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border-radius:14px;
+  background:var(--card);box-shadow:var(--sh-1);margin-bottom:9px;text-align:left;
+  transition:box-shadow .2s}
+.ts-person:active{box-shadow:var(--sh-up)}
+.ts-person .nm{flex:1;min-width:0}
+.ts-person .nm b{display:block;font-size:14px;font-weight:600;line-height:1.3}
+.ts-person .nm small{font-size:11.5px;color:var(--txt-3)}
+.ts-person .hh{text-align:right;flex:0 0 auto}
+.ts-person .hh b{display:block;font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2}
+.ts-person .hh small{font-size:10.5px;color:var(--txt-3)}
+.ts-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.ts-cal .hd{font-size:10px;font-weight:700;color:var(--txt-3);text-align:center;padding-bottom:3px}
+.ts-cal .cel{background:var(--canvas);border-radius:11px;padding:5px 2px 4px;text-align:center}
+.ts-cal .cel.pad{background:none}
+.ts-cal .cel.we{background:var(--brand-wash)}
+.ts-cal .cel.has{background:var(--green-wash)}
+.ts-cal .cel small{display:block;font-size:9.5px;font-weight:700;color:var(--txt-3);line-height:1}
+.ts-cal .cel input{width:100%;border:none;background:none;text-align:center;font-size:16px;
+  font-weight:700;padding:2px 0 0;font-variant-numeric:tabular-nums;color:var(--txt-3)}
+.ts-cal .cel.has input{color:var(--green)}
+.ts-cal .cel input:focus{outline:2px solid var(--brand);outline-offset:-3px;border-radius:9px}
+
+/* ================= QR ================= */
+.qr-sm{width:56px;height:56px;border-radius:9px;background:#fff;display:block;object-fit:contain;
+  cursor:zoom-in;box-shadow:var(--sh-1);transition:box-shadow .22s,transform .22s}
+.qr-sm:hover{box-shadow:var(--sh-up);transform:scale(1.06)}
+.qr-ph{width:56px;height:56px;border-radius:9px;background:var(--canvas);display:flex;align-items:center;
+  justify-content:center;font-size:9.5px;color:var(--txt-3);text-align:center;line-height:1.2;padding:4px}
+
+/* ================= CỬA SỔ NỔI ================= */
+.mask{position:fixed;inset:0;background:rgba(20,24,28,.4);backdrop-filter:blur(3px);z-index:80;
+  display:flex;align-items:center;justify-content:center;padding:18px;animation:fade .15s}
+.modal{background:var(--card);border-radius:var(--r-xl);box-shadow:0 30px 80px rgba(20,24,28,.28);
+  width:100%;max-width:560px;max-height:88vh;display:flex;flex-direction:column;
+  animation:pop .22s cubic-bezier(.2,.9,.3,1.1)}
+.modal.wide{max-width:840px}
+.modal-h{padding:18px 22px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;gap:12px}
+.modal-h h3{margin:0;font-size:16px;font-weight:700}
+.modal-h p{margin:2px 0 0;font-size:12px;color:var(--txt-3)}
+.modal-b{padding:20px 22px;overflow-y:auto;flex:1}
+.modal-f{padding:15px 22px;border-top:1px solid var(--line-soft);display:flex;gap:9px;justify-content:flex-end}
+.x{margin-left:auto;width:32px;height:32px;border-radius:10px;display:flex;align-items:center;
+  justify-content:center;color:var(--txt-3);transition:background .16s,color .16s}
+.x:hover{background:var(--canvas);color:var(--txt)}
+
+/* ================= BÁO CÁO ================= */
+.report{background:var(--canvas);border-radius:14px;padding:22px 24px;font-size:14px;line-height:1.75;
+  white-space:pre-wrap;font-variant-numeric:tabular-nums;max-height:640px;overflow-y:auto}
+
+/* ================= ĐĂNG NHẬP ================= */
+/* Màn đăng nhập lấy chính ảnh khách sạn làm nền: mở app ra là thấy ngay cái mình đang quản lý.
+   Ảnh phủ kín, phóng nhẹ cho khỏi thấy mép, rồi phủ một lớp tối chuyển dần lên để thẻ trắng
+   ở giữa còn nổi và chữ còn đọc được. */
+.login{min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;
+  padding:20px;background:#14181C;position:relative;overflow:hidden;isolation:isolate}
+.login::before{content:'';position:absolute;inset:-4%;z-index:-2;
+  background:url('/hotel.webp') center 38%/cover no-repeat;transform:scale(1.06)}
+.login::after{content:'';position:absolute;inset:0;z-index:-1;
+  background:linear-gradient(180deg,rgba(20,24,28,.55),rgba(20,24,28,.72) 55%,rgba(20,24,28,.88))}
+.login-card{width:100%;max-width:410px;background:var(--card);border-radius:26px;
+  box-shadow:0 34px 90px rgba(0,0,0,.4);padding:32px 30px}
+.login-card .logo{width:54px;height:54px;border-radius:17px;font-size:19px;margin-bottom:16px}
+.login-card h2{margin:0 0 4px;font-size:22px;font-weight:800;letter-spacing:-.025em}
+.login-card p{margin:0 0 20px;font-size:13px;color:var(--txt-3)}
+.err{background:var(--red-wash);color:var(--red);padding:9px 12px;border-radius:10px;font-size:12.5px;font-weight:600;margin-bottom:12px}
+
+/* ================= DẢI NHẮC ================= */
+.banner{display:flex;align-items:flex-start;gap:11px;padding:13px 16px;border-radius:14px;
+  background:var(--amber-wash);margin-bottom:16px;font-size:12.5px;color:#7A5410;line-height:1.55;
+  box-shadow:var(--sh-1)}
+.banner b{color:#5E4009}
+
+/* =====================================================================
+   NHỊP CHUYỂN CẢNH
+   ---------------------------------------------------------------------
+   1) trang cũ mờ đi (.page.leaving, ~0.22s) rồi mới tháo ra;
+   2) hàng chỉ số hiện trước, số chạy từ 0 lên (countUp trong JS);
+   3) các thẻ bên dưới bung dần từ trên xuống, cái sau trễ hơn cái trước;
+   4) tiêu đề cuộn: chữ cũ trượt xuống mờ đi, chữ mới trượt từ trên xuống vào chỗ (RollSwap).
+   fill-mode là `backwards` chứ KHÔNG phải `both`: giữ lại transform/clip-path sau khi chạy xong sẽ
+   biến .page/.card thành khung chứa của mọi modal position:fixed bên trong -> modal lệch chỗ.
+   Cố ý KHÔNG tắt theo prefers-reduced-motion: máy Windows bật "tiết kiệm pin" là cờ đó bật theo,
+   mà hiệu ứng này là thứ chủ app chủ động yêu cầu chứ không phải trang trí thêm.
+   ===================================================================== */
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes pop{from{transform:translateY(12px) scale(.98);opacity:0}to{transform:none;opacity:1}}
+@keyframes pageOut{to{opacity:0;transform:translateY(-6px)}}
+@keyframes pageIn{from{opacity:0}to{opacity:1}}
+@keyframes kpiIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes cardIn{from{opacity:0;transform:translateY(-14px);clip-path:inset(0 0 100% 0)}
+  to{opacity:1;transform:none;clip-path:inset(-80px)}}
+.page{animation:pageIn .3s ease-out backwards}
+.page.leaving{animation:pageOut .22s cubic-bezier(.4,0,1,1) forwards;pointer-events:none}
+.page .stat{animation:kpiIn .55s var(--ease) .05s backwards}
+.page .card{animation:cardIn .7s var(--ease) .18s backwards}
+.page .card:nth-child(2){animation-delay:.26s}
+.page .card:nth-child(3){animation-delay:.34s}
+.page .card:nth-child(4){animation-delay:.42s}
+.page .card:nth-child(5){animation-delay:.50s}
+.page .card:nth-child(n+6){animation-delay:.56s}
+/* Thẻ lồng trong thẻ và chỉ số trong thẻ không diễn lại lần nữa — bung hai tầng là rối mắt */
+.page .card .card,.page .card .stat{animation:none}
+.page.leaving .card,.page.leaving .stat{animation:none}
+
+/* Tiêu đề trang cuộn chữ */
+.roll{position:relative}
+.roll-out{position:absolute;left:0;right:0;top:0;pointer-events:none;
+  animation:rollOut .42s cubic-bezier(.4,0,.2,1) forwards}
+.roll-in{animation:rollIn .6s var(--ease) .2s backwards}
+@keyframes rollOut{to{opacity:0;transform:translateY(80%);filter:blur(2px)}}
+@keyframes rollIn{from{opacity:0;transform:translateY(-80%);filter:blur(2px)}to{opacity:1;transform:none;filter:none}}
+
+/* ================= MÀN HÌNH HẸP ================= */
+.mob-bar{display:none}
+@media(max-width:960px){
+  .nav{display:none}
+  .main{margin-left:0}
+  /* Màn hẹp: tiêu đề chiếm trọn một dòng, mấy cái chip xuống dòng dưới. Để chung một dòng thì
+     tiêu đề bị bóp còn ba chữ một dòng, đọc như thơ. */
+  .topbar{position:static;height:auto;padding:calc(8px + env(safe-area-inset-top)) 14px 6px;
+    background:none;backdrop-filter:none;-webkit-backdrop-filter:none;flex-wrap:wrap;gap:8px}
+  .topbar > :first-child{width:100%}
+  .topbar h1{font-size:19px}
+  .top-right{margin-left:0}
+  .top-date{padding:5px 11px;font-size:12px}
+  .page{padding:4px 14px 96px}
+  .stats{grid-template-columns:1fr 1fr;gap:10px}
+  .stat{padding:13px 14px;border-radius:16px}
+  .stat .vl{font-size:19px}
+  .card{border-radius:16px}
+  .card-b{padding:15px}
+  .grid2,.grid3{grid-template-columns:1fr}
+  .bar-row .nm{width:118px;flex:0 0 118px;font-size:12px}
+  .bar-row .vl{width:96px;flex:0 0 96px;font-size:12px}
+  .bar-row .pc{display:none}
+  .mob-bar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:50;
+    background:rgba(247,245,244,.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    box-shadow:0 -6px 24px rgba(20,24,28,.08);padding:6px 4px calc(6px + env(safe-area-inset-bottom));gap:2px}
+  .mob-bar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 2px;
+    border-radius:11px;color:var(--txt-3);font-size:9.5px;font-weight:600;transition:color .18s,background .18s}
+  .mob-bar button.on{color:#fff;background:var(--brand);box-shadow:var(--sh-brand)}
+  .modal{max-height:92vh;border-radius:20px}
+}
+/* Hai cột báo cáo: hẹp hơn 1100px là xếp chồng, không thì bảng bên phải bị bóp nghẹt */
+@media(max-width:1100px){ .rp-grid{grid-template-columns:1fr !important} }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="boot" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#F7F5F4;font-family:'K2D',system-ui,sans-serif;color:#8D96A3;font-size:13px;z-index:200">Đang tải…</div>
+
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-app-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-auth-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js" crossorigin></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.7/babel.min.js"></script>
+
+<script id="src" type="text/plain">
+const { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback, createContext, useContext } = React;
+
+/* =====================================================================
+   CLIFF HOUSE — QUẢN TRỊ KHÁCH SẠN
+   ---------------------------------------------------------------------
+   Một file, không build. Mở bằng trình duyệt là chạy.
+
+   CHẾ ĐỘ DEMO: FB_CFG.apiKey còn trống -> app chạy bằng dữ liệu mẫu lưu
+   trong localStorage. Sửa gì cũng được, không đụng tới máy chủ nào.
+   Dán cấu hình Firebase thật vào FB_CFG là tự chuyển sang chạy thật.
+===================================================================== */
+
+/* ⬇⬇⬇ CẤU HÌNH FIREBASE — khối này KHÔNG phải bí mật, mọi web app Firebase đều để lộ nó ⬇⬇⬇ */
+const FB_CFG = {
+  apiKey: "AIzaSyArjVm_76VSlFyUB5GU8_FBusCYA2ursL0",
+  authDomain: "khachsancliffhouse.firebaseapp.com",
+  projectId: "khachsancliffhouse",
+  storageBucket: "khachsancliffhouse.firebasestorage.app",
+  messagingSenderId: "996545343221",
+  appId: "1:996545343221:web:c998f9d7798012f38f1fbc"
+};
+/* ⬆⬆⬆ HẾT KHỐI CẤU HÌNH FIREBASE ⬆⬆⬆ */
+/* Thêm ?demo vào địa chỉ là chạy bằng dữ liệu mẫu trong máy, không đụng tới Firestore —
+   để còn xem thử / dựng giao diện mà không làm bẩn số liệu thật. */
+const DEMO = !FB_CFG.apiKey || new URLSearchParams(location.search).has('demo');
+
+const BRAND = { name: 'Cliff House', sub: 'Hotel', mark: 'CH', logo: '/hotel.webp' };
+/* Ảnh không tải được (mất mạng, sai đường dẫn) thì rơi về chữ tắt, không để ô trống trơn */
+const Logo = ({ cls: c }) => (
+  <div className={'logo ' + (c || '')}>
+    {BRAND.logo
+      ? <img src={BRAND.logo} alt={BRAND.name} onError={e => { e.target.style.display = 'none'; e.target.parentNode.textContent = BRAND.mark; }} />
+      : BRAND.mark}
+  </div>
+);
+
+/* Tên collection trên Firestore — đổi tiền tố ở đây là đổi hết */
+const COL = { cash: 'ch_cash', emp: 'ch_employees', ts: 'ch_timesheet', pay: 'ch_payroll', cfg: 'ch_config', usr: 'ch_users' };
+
+/* ===================== TIỆN ÍCH ===================== */
+const n0 = (v) => Math.round(Number(v) || 0);
+/* Tiền: luôn có dấu chấm ngăn nghìn, không bao giờ hiện số thập phân */
+const money = (v) => n0(v).toLocaleString('vi-VN');
+const moneyD = (v) => money(v) + ' đ';
+/* Rút gọn cho trục biểu đồ: 26.373.006 -> 26,4tr */
+const short = (v) => {
+  const a = Math.abs(n0(v));
+  if (a >= 1e9) return (v / 1e9).toFixed(1).replace('.', ',') + ' tỷ';
+  if (a >= 1e6) return (v / 1e6).toFixed(1).replace('.', ',') + 'tr';
+  if (a >= 1e3) return Math.round(v / 1e3) + 'k';
+  return String(n0(v));
+};
+const hrs = (v) => {
+  const x = Number(v) || 0;
+  return (Math.round(x * 10) / 10).toLocaleString('vi-VN');
+};
+const pad2 = (n) => String(n).padStart(2, '0');
+const mKey = (y, m) => y + '-' + pad2(m);
+const mParse = (k) => ({ y: +String(k).slice(0, 4), m: +String(k).slice(5, 7) });
+const mLabel = (k) => { const { y, m } = mParse(k); return 'Tháng ' + m + '/' + y; };
+const daysIn = (y, m) => new Date(y, m, 0).getDate();
+const dowOf = (y, m, d) => new Date(y, m - 1, d).getDay();
+const isWeekend = (y, m, d) => { const w = dowOf(y, m, d); return w === 0 || w === 6; };
+const todayKey = () => { const d = new Date(); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); };
+const thisMonth = () => { const d = new Date(); return mKey(d.getFullYear(), d.getMonth() + 1); };
+const dShort = (k) => { const p = String(k).split('-'); return p.length === 3 ? p[2] + '/' + p[1] : k; };
+const dFull = (k) => { const p = String(k).split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : k; };
+/* Tháng liền trước / sau — dùng cho so sánh kỳ và cho việc ghép lương trả tháng sau */
+const mAdd = (k, delta) => {
+  const { y, m } = mParse(k);
+  const t = y * 12 + (m - 1) + delta;
+  return mKey(Math.floor(t / 12), (t % 12) + 1);
+};
+const noAccent = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const cls = (...a) => a.filter(Boolean).join(' ');
+const initials = (nm) => noAccent(nm || '?').trim().split(/\s+/).slice(-2).map(x => x[0] || '').join('').toUpperCase() || '?';
+/* Chênh lệch % giữa hai kỳ — chia cho 0 thì trả null để chỗ hiện biết mà im lặng */
+const pctDiff = (cur, prev) => (!prev ? null : ((cur - prev) / Math.abs(prev)) * 100);
+
+/* ===================== BIỂU TƯỢNG ===================== */
+const mkIc = (d, fill) => ({ size = 18, ...p } = {}) => (
+  <svg className="ic" width={size} height={size} viewBox="0 0 24 24" fill={fill ? 'currentColor' : 'none'}
+    stroke={fill ? 'none' : 'currentColor'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...p}>
+    {d}
+  </svg>
+);
+const Ic = {
+  gauge: mkIc(<><path d="M12 14l4-4" /><circle cx="12" cy="14" r="8" /><path d="M4 14a8 8 0 0116 0" /></>),
+  pie: mkIc(<><path d="M21 15.5A9 9 0 118.5 3v9h12.5z" /></>),
+  chart: mkIc(<><path d="M3 3v18h18" /><path d="M7 15l4-5 3 3 5-7" /></>),
+  clock: mkIc(<><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>),
+  wallet: mkIc(<><path d="M3 7h16a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" /><path d="M3 7l2-3h12l2 3" /><circle cx="17" cy="13" r="1.3" /></>),
+  users: mkIc(<><circle cx="9" cy="8" r="3.4" /><path d="M2.5 20a6.5 6.5 0 0113 0" /><path d="M16 5.2a3.4 3.4 0 010 6.6" /><path d="M17.5 14.2A6.5 6.5 0 0121.5 20" /></>),
+  settings: mkIc(<><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-2.7 1.1V21a2 2 0 11-4 0v-.1A1.6 1.6 0 006.9 19l-.1.1a2 2 0 11-2.8-2.8l.1-.1A1.6 1.6 0 003 13.6H3a2 2 0 010-4h.1A1.6 1.6 0 004.6 7l-.1-.1a2 2 0 112.8-2.8l.1.1A1.6 1.6 0 0010 3.4V3a2 2 0 014 0v.1a1.6 1.6 0 002.7 1.1l.1-.1a2 2 0 112.8 2.8l-.1.1a1.6 1.6 0 001.1 2.7H21a2 2 0 010 4h-.1a1.6 1.6 0 00-1.5 1z" /></>),
+  down: mkIc(<><path d="M12 4v13" /><path d="M6 12l6 6 6-6" /></>),
+  sync: mkIc(<><path d="M21 12a9 9 0 01-15.5 6.2L3 16" /><path d="M3 12a9 9 0 0115.5-6.2L21 8" /><path d="M21 4v4h-4" /><path d="M3 20v-4h4" /></>),
+  copy: mkIc(<><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V5a2 2 0 012-2h10" /></>),
+  check: mkIc(<><path d="M4 12.5l5 5L20 6.5" /></>),
+  lock: mkIc(<><rect x="4" y="10" width="16" height="10" rx="2" /><path d="M8 10V7a4 4 0 118 0v3" /></>),
+  unlock: mkIc(<><rect x="4" y="10" width="16" height="10" rx="2" /><path d="M8 10V7a4 4 0 017-2.6" /></>),
+  plus: mkIc(<><path d="M12 5v14M5 12h14" /></>),
+  x: mkIc(<><path d="M6 6l12 12M18 6L6 18" /></>),
+  edit: mkIc(<><path d="M4 20h4L19 9a2.5 2.5 0 00-3.5-3.5L4 16v4z" /></>),
+  trash: mkIc(<><path d="M4 7h16" /><path d="M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2" /><path d="M6 7l1 13h10l1-13" /></>),
+  qr: mkIc(<><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><path d="M14 14h3v3h-3zM20 14v3M14 20h6" /></>),
+  warn: mkIc(<><path d="M12 3l9.5 17H2.5L12 3z" /><path d="M12 9v5M12 17.5v.01" /></>),
+  arrowU: mkIc(<><path d="M12 19V5M6 11l6-6 6 6" /></>),
+  arrowD: mkIc(<><path d="M12 5v14M6 13l6 6 6-6" /></>),
+  panel: mkIc(<><rect x="3" y="4" width="18" height="16" rx="2.5" /><path d="M9.5 4v16" /></>),
+  chev: mkIc(<><path d="M9 5l7 7-7 7" /></>),
+};
+
+/* =====================================================================
+   CHUYỂN CẢNH — ba mảnh dùng chung cho cả app
+===================================================================== */
+/* ---- ĐO Ô ĐANG CHỌN ĐỂ VIÊN HIGHLIGHT TRƯỢT TỚI ----
+   CSS không tự biết mục nào nằm ở đâu, nên phải đo bằng JS rồi đặt top/height cho viên pill;
+   CSS chỉ còn lo phần trượt. Đo lại khi đổi mục, khi menu thu/mở, và khi cửa sổ đổi kích thước. */
+function useHlRect(activeKey, boxRef, extraDeps) {
+  const [rect, setRect] = useState(null);
+  const measure = useCallback(() => {
+    const box = boxRef.current;
+    const el = box && box.querySelector('[data-hlk="' + activeKey + '"]');
+    if (!el) { setRect(null); return; }
+    setRect({ top: el.offsetTop, height: el.offsetHeight });
+  }, [activeKey, ...(extraDeps || [])]);
+  useLayoutEffect(measure, [measure]);
+  useEffect(() => {
+    const r = requestAnimationFrame(measure);
+    window.addEventListener('resize', measure);
+    /* Phông chữ về muộn hơn lần vẽ đầu -> mọi thứ xê dịch vài pixel và viên pill nằm trật chỗ
+       ngay từ giây đầu mở app. Đo lại một lần nữa khi phông đã sẵn sàng. */
+    let live = true;
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (live) measure(); });
+    return () => { live = false; cancelAnimationFrame(r); window.removeEventListener('resize', measure); };
+  }, [measure]);
+  return [rect, measure];
+}
+
+/* ---- TIÊU ĐỀ CUỘN CHỮ ----
+   Đổi `k` thì giữ lại nội dung cũ thêm một nhịp để nó trượt xuống mờ đi, còn nội dung mới trượt
+   từ trên xuống vào chỗ. Nội dung cũ lấy từ lần vẽ trước. */
+function RollSwap({ k, children }) {
+  const [out, setOut] = useState(null);
+  const keyRef = useRef(k);
+  const nodeRef = useRef(children);
+  useLayoutEffect(() => {
+    if (keyRef.current === k) return;
+    setOut({ k: keyRef.current, node: nodeRef.current });
+    keyRef.current = k;
+    const t = setTimeout(() => setOut(null), 750);
+    return () => clearTimeout(t);
+  }, [k]);
+  useEffect(() => { nodeRef.current = children; });
+  return (
+    <div className="roll">
+      {out && <div key={'o' + out.k} className="roll-out" aria-hidden="true">{out.node}</div>}
+      <div key={'i' + k} className={out ? 'roll-in' : ''}>{children}</div>
+    </div>
+  );
+}
+
+/* ---- SỐ CHẠY TỪ 0 LÊN ----
+   Sửa thẳng text node rồi trả lại nguyên văn khi xong. Giữ nguyên dấu chấm ngăn nghìn / dấu phẩy
+   thập phân của chuỗi gốc bằng cách rót chữ số mới vào đúng khuôn chữ số cũ, từ phải sang.
+   Nếu React đổi text giữa chừng (người dùng bấm sang tháng khác) thì bỏ node đó, không ghi đè. */
+function countUp(root) {
+  if (!root) return;
+  const els = root.querySelectorAll('.stat .vl');
+  const jobs = [];
+  els.forEach(el => {
+    const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let n;
+    while ((n = w.nextNode())) {
+      const src = n.nodeValue;
+      if (src.includes(':')) continue;
+      const m = src.match(/\d[\d.,]*\d|\d/);
+      if (!m) continue;
+      const tok = m[0];
+      const target = parseInt(tok.replace(/\D/g, ''), 10);
+      if (!target) continue;
+      const lastSep = Math.max(tok.lastIndexOf('.'), tok.lastIndexOf(','));
+      const tail = lastSep >= 0 ? tok.length - lastSep - 1 : 0;
+      const minDigits = lastSep >= 0 && tail !== 3 ? tail + 1 : 1;
+      jobs.push({ n, src, tok, at: m.index, target, minDigits, last: src });
+    }
+  });
+  if (!jobs.length) return;
+  const fmt = (j, v) => {
+    let ds = String(v).padStart(j.minDigits, '0');
+    let out = '';
+    for (let i = j.tok.length - 1; i >= 0 && ds.length; i--) {
+      const c = j.tok[i];
+      if (/\d/.test(c)) { out = ds[ds.length - 1] + out; ds = ds.slice(0, -1); }
+      else if (ds.length) out = c + out;
+    }
+    return j.src.slice(0, j.at) + out + j.src.slice(j.at + j.tok.length);
+  };
+  const DUR = 1000, t0 = performance.now();
+  const tick = (now) => {
+    const p = Math.min(1, (now - t0) / DUR);
+    const e = 1 - Math.pow(1 - p, 4);
+    let alive = false;
+    jobs.forEach(j => {
+      if (j.dead) return;
+      if (j.n.nodeValue !== j.last) { j.dead = true; return; }
+      j.last = p < 1 ? fmt(j, Math.round(j.target * e)) : j.src;
+      j.n.nodeValue = j.last;
+      if (p < 1) alive = true;
+    });
+    if (alive) requestAnimationFrame(tick);
+  };
+  jobs.forEach(j => { j.last = fmt(j, 0); j.n.nodeValue = j.last; });
+  requestAnimationFrame(tick);
+}
+
+/* ===================== LOẠI CHI PHÍ ===================== */
+/* Tên lấy nguyên từ KiotViet. Bảng này chỉ thêm emoji + màu + nhóm cho dễ nhìn;
+   loại nào KiotViet có mà đây chưa khai thì vẫn hiện, chỉ là dùng emoji mặc định. */
+const CAT_META = {
+  'Chi phí Điện':                     { e: '⚡', c: '#D98A0B', g: 'Tiện ích' },
+  'Chi phí Nước sinh hoạt':           { e: '🚿', c: '#2F6DB5', g: 'Tiện ích' },
+  'Chi phí Lương':                    { e: '👥', c: '#6C5CE7', g: 'Nhân sự' },
+  'Chi phí đóng BHXH':                { e: '🧾', c: '#8B7BE8', g: 'Nhân sự' },
+  'Chi phí hoa hồng CTV':             { e: '🤝', c: '#B07D2B', g: 'Bán hàng' },
+  'Chi phí trả phí Booking':          { e: '🏨', c: '#C4443C', g: 'Bán hàng' },
+  'Chi phí hoàn trả tiền phòng khách':{ e: '💸', c: '#E07A73', g: 'Bán hàng' },
+  'Chi phí sửa chữa KS':              { e: '🔧', c: '#12875A', g: 'Vận hành' },
+  'Chi phí trả vật tư buồng phòng':   { e: '🧴', c: '#2FA37A', g: 'Vận hành' },
+  'Chi phí mua công cụ dụng cụ':      { e: '🧰', c: '#5FB894', g: 'Vận hành' },
+  'Chi phí trả tiền thuê xe':         { e: '🚗', c: '#4A8FD4', g: 'Vận hành' },
+  'Văn phòng':                        { e: '🏢', c: '#8D96A3', g: 'Quản lý' },
+};
+const CAT_DEF = { e: '💼', c: '#8D96A3', g: 'Khác' };
+const catMeta = (nm) => CAT_META[nm] || CAT_DEF;
+/* Loại chi được coi là "trả lương nhân viên" — dùng để gán ngược về tháng công */
+const SALARY_CAT = 'Chi phí Lương';
+/* Loại chi được coi là "tạm ứng lương" — dùng để tự điền cột tạm ứng */
+const ADVANCE_CAT = 'Tạm ứng lương';
+
+/* =====================================================================
+   DỮ LIỆU MẪU
+   ---------------------------------------------------------------------
+   Sinh cố định theo một bộ sinh số giả ngẫu nhiên có hạt giống, nên mở
+   lại bao nhiêu lần cũng ra đúng bấy nhiêu số — biểu đồ không nhảy múa
+   mỗi lần F5.
+   Tháng 8/2026 lấy ĐÚNG số trong báo cáo thật đã đưa, để đối chiếu.
+===================================================================== */
+const rngOf = (seed) => { let s = seed >>> 0 || 1; return () => { s ^= s << 13; s ^= s >>> 17; s ^= s << 5; return ((s >>> 0) % 100000) / 100000; }; };
+
+const AUG26 = {
+  thu: 205931716,
+  chi: {
+    'Chi phí Điện': 26373006,
+    'Chi phí đóng BHXH': 5033600,
+    'Chi phí hoa hồng CTV': 520000,
+    'Chi phí hoàn trả tiền phòng khách': 500000,
+    'Chi phí Lương': 4000000,
+    'Chi phí mua công cụ dụng cụ': 1000000,
+    'Chi phí Nước sinh hoạt': 2752175,
+    'Chi phí sửa chữa KS': 7000000,
+    'Chi phí trả phí Booking': 5551461,
+    'Chi phí trả tiền thuê xe': 3240000,
+    'Chi phí trả vật tư buồng phòng': 3064474,
+    'Văn phòng': 474000,
+    /* Báo cáo gốc ghi TỔNG CHI 61.258.242 nhưng 12 dòng liệt kê chỉ cộng được
+       59.508.716. Khoản chênh 1.749.526 để tạm ở đây cho hai con số khớp nhau —
+       cần đối chiếu lại với sổ quỹ thật xem nó là loại chi gì. */
+    'Chi phí khác': 1749526,
+  },
+};
+
+/* Lợi nhuận mục tiêu từng tháng — dùng để dựng ngược số thu cho ra đúng đường cong */
+const TARGET = {
+  '2025-01': 28400000, '2025-02': 31800000, '2025-03': 33500000, '2025-04': 30200000,
+  '2025-05': 14900000, '2025-06': 78600000, '2025-07': 55400000, '2025-08': 71200000,
+  '2025-09': 42300000, '2025-10': 38700000, '2025-11': 35100000, '2025-12': 61900000,
+  '2026-01': 44464000, '2026-02': 48254226, '2026-03': 50972031, '2026-04': 48598986,
+  '2026-05': 21378243, '2026-06': 124255768, '2026-07': 82965000,
+};
+
+const SEED_EMP = [
+  { id: 'E1', name: 'Nguyễn Văn Hùng', title: 'Quản lý', rate: 40000, phone: '0903 112 445', joined: '2023-04-01', bin: '970436', accNo: '1023456789', accName: 'NGUYEN VAN HUNG', status: 'active' },
+  { id: 'E2', name: 'Trần Thị Mai', title: 'Lễ tân', rate: 28000, phone: '0912 778 003', joined: '2024-01-15', bin: '970422', accNo: '8801234567', accName: 'TRAN THI MAI', status: 'active' },
+  { id: 'E3', name: 'Lê Thị Hồng', title: 'Lễ tân', rate: 28000, phone: '0977 340 126', joined: '2024-06-01', bin: '970415', accNo: '1050123456', accName: 'LE THI HONG', status: 'active' },
+  { id: 'E4', name: 'Võ Thị Lan', title: 'Buồng phòng', rate: 25000, phone: '0935 221 087', joined: '2023-09-10', bin: '970436', accNo: '1099887766', accName: 'VO THI LAN', status: 'active' },
+  { id: 'E5', name: 'Đặng Minh Quân', title: 'Buồng phòng', rate: 25000, phone: '0988 445 219', joined: '2025-02-20', bin: '970407', accNo: '1903445522', accName: 'DANG MINH QUAN', status: 'active' },
+  { id: 'E6', name: 'Bùi Văn Nam', title: 'Bảo trì – kỹ thuật', rate: 30000, phone: '0909 664 132', joined: '2024-03-05', bin: '970418', accNo: '2100998877', accName: 'BUI VAN NAM', status: 'active' },
+  { id: 'E7', name: 'Huỳnh Thị Thu', title: 'Buồng phòng', rate: 24000, phone: '0931 555 702', joined: '2022-11-01', bin: '970432', accNo: '0331122334', accName: 'HUYNH THI THU', status: 'off' },
+];
+/* Số giờ một ngày công của từng người — bộ sinh dữ liệu mẫu dùng con số này */
+const SEED_SHIFT = { E1: 8, E2: 8, E3: 8, E4: 7, E5: 7, E6: 5, E7: 7 };
+const SEED_DAYS = { E1: 26, E2: 26, E3: 26, E4: 26, E5: 26, E6: 26, E7: 0 };
+
+/* Danh sách tháng có dữ liệu: 01/2025 -> tháng hiện tại */
+const allMonths = () => {
+  const out = [];
+  const now = new Date();
+  const end = mKey(now.getFullYear(), now.getMonth() + 1);
+  let k = '2025-01';
+  while (k <= end) { out.push(k); k = mAdd(k, 1); }
+  return out;
+};
+
+function seedDb() {
+  /* Liệt kê theo dữ liệu THẬT đang có, không theo mốc cố định — sổ quỹ nạp tới đâu hiện tới đó */
+  const months = useMemo(() => {
+    const s = new Set((db.cash || []).map(c => String(c.date).slice(0, 7)));
+    Object.keys(db.timesheet || {}).forEach(k => s.add(k));
+    return Array.from(s).sort();
+  }, [db.cash, db.timesheet]);
+  const emps = SEED_EMP.map(e => ({ ...e }));
+  const cash = [];
+  const ts = {};
+
+  months.forEach((mk, mi) => {
+    const { y, m } = mParse(mk);
+    const dim = daysIn(y, m);
+    const rng = rngOf(y * 100 + m);
+
+    /* ---- Bảng công ---- */
+    const cells = {};
+    let gross = 0;
+    emps.forEach(e => {
+      if (!SEED_DAYS[e.id]) return;
+      const want = Math.min(dim, Math.round(SEED_DAYS[e.id] * (0.92 + rng() * 0.16)));
+      const row = {};
+      let put = 0, d = 1;
+      while (put < want && d <= dim) {
+        if (d % 7 !== (mi % 7)) { row[d] = SEED_SHIFT[e.id] + (rng() > 0.86 ? 2 : 0); put++; }
+        d++;
+      }
+      cells[e.id] = row;
+      gross += Object.values(row).reduce((a, b) => a + b, 0) * e.rate;
+    });
+    ts[mk] = cells;
+
+    /* ---- Sổ quỹ: phiếu chi ---- */
+    const isAug = mk === '2026-08';
+    const scale = isAug ? 1 : 0.68 + rng() * 0.7;
+    const cats = {};
+    Object.keys(AUG26.chi).forEach(c => {
+      let v = isAug ? AUG26.chi[c] : Math.round(AUG26.chi[c] * scale * (0.6 + rng() * 0.9) / 1000) * 1000;
+      if (c === 'Chi phí sửa chữa KS' && !isAug && rng() > 0.55) v = 0;
+      if (c === 'Chi phí hoàn trả tiền phòng khách' && !isAug && rng() > 0.4) v = 0;
+      if (v > 0) cats[c] = v;
+    });
+    Object.keys(cats).forEach(c => {
+      /* Cắt mỗi loại thành 1–3 phiếu chi rải trong tháng cho giống sổ quỹ thật */
+      const parts = cats[c] > 4000000 ? (rng() > 0.5 ? 3 : 2) : 1;
+      let left = cats[c];
+      for (let i = 0; i < parts; i++) {
+        const amt = i === parts - 1 ? left : Math.round(cats[c] / parts / 1000) * 1000;
+        left -= amt;
+        if (amt <= 0) continue;
+        cash.push({ id: uid(), date: mk + '-' + pad2(Math.min(dim, 3 + Math.floor(rng() * (dim - 4)))), type: 'chi', cat: c, amount: amt, note: c, code: 'PC' + mk.replace('-', '') + pad2(cash.length % 99) });
+      }
+    });
+
+    /* ---- Tạm ứng lương: vài người ứng giữa tháng ----
+       Xoay vòng theo tháng để tháng nào cũng có vài người ứng — bốc hoàn toàn ngẫu nhiên
+       thì có tháng không ai ứng, mở đúng tháng đó ra là tưởng tính năng hỏng. */
+    emps.filter(e => e.status === 'active').forEach((e, i) => {
+      if (i % 3 === mi % 3 || rng() > 0.78) {
+        const amt = (1 + Math.floor(rng() * 3)) * 500000;
+        cash.push({ id: uid(), date: mk + '-' + pad2(10 + Math.floor(rng() * 8)), type: 'chi', cat: ADVANCE_CAT, amount: amt, note: 'Tạm ứng lương ' + e.name, code: 'TU' + mk.replace('-', ''), empId: e.id });
+      }
+    });
+
+    /* ---- Sổ quỹ: phiếu thu, dựng ngược từ lợi nhuận mục tiêu ---- */
+    const chiTotal = cash.filter(x => x.date.slice(0, 7) === mk && x.type === 'chi' && x.cat !== ADVANCE_CAT)
+      .reduce((a, b) => a + b.amount, 0);
+    const target = TARGET[mk] != null ? TARGET[mk] : Math.round((chiTotal + gross) * (0.9 + rng() * 0.8));
+    const thuTotal = isAug ? AUG26.thu : target + chiTotal + gross;
+    /* Rải doanh thu ra từng ngày — trang chi tiết và biểu đồ cần dữ liệu ngày */
+    let left = thuTotal;
+    for (let d = 1; d <= dim; d++) {
+      const last = d === dim;
+      const amt = last ? left : Math.round(thuTotal / dim * (0.45 + rng() * 1.2) / 1000) * 1000;
+      if (amt <= 0 || (!last && amt > left)) continue;
+      left -= amt;
+      cash.push({ id: uid(), date: mk + '-' + pad2(d), type: 'thu', cat: 'Doanh thu phòng', amount: amt, note: 'Thu tiền phòng ngày ' + d + '/' + m, code: 'PT' + mk.replace('-', '') + pad2(d) });
+    }
+  });
+
+  return { cash, employees: emps, timesheet: ts, payroll: {}, closes: {}, cfg: { kvClient: '', kvSecret: '', kvRetailer: '', lastSync: '' } };
+}
+
+/* =====================================================================
+   KHO DỮ LIỆU
+   ---------------------------------------------------------------------
+   Hai đường đi, cùng một hình dạng dữ liệu trong bộ nhớ:
+     - DEMO  : nằm trong localStorage của chính máy này
+     - THẬT  : nằm trên Firestore
+
+   Cách chia document trên Firestore: MỖI THÁNG MỘT DOCUMENT, không phải mỗi
+   phiếu một document. Firestore tính tiền theo số document trả về — một năm
+   sổ quỹ khách sạn cỡ 600 phiếu, để rời là 600 lượt đọc mỗi lần mở app; gom
+   theo tháng còn 12. Một tháng vài trăm phiếu vẫn còn xa trần 1MB/document.
+===================================================================== */
+const LS_KEY = 'ch_demo_db_v2';
+const EMPTY_DB = { cash: [], employees: [], timesheet: {}, tsNames: {}, payroll: {}, closes: {}, cfg: {} };
+
+const loadDb = () => {
+  try { const r = localStorage.getItem(LS_KEY); if (r) return JSON.parse(r); } catch (e) {}
+  const d = seedDb();
+  try { localStorage.setItem(LS_KEY, JSON.stringify(d)); } catch (e) {}
+  return d;
+};
+const saveDb = (d) => { try { localStorage.setItem(LS_KEY, JSON.stringify(d)); } catch (e) { console.warn('Không lưu được:', e.message); } };
+
+/* ===================== KẾT NỐI FIREBASE ===================== */
+let FS = null, AUTH = null;
+
+function bootCloud() {
+  if (!window.firebase || !firebase.initializeApp) throw new Error('Chưa tải được Firebase SDK — kiểm tra mạng');
+  if (!firebase.apps.length) firebase.initializeApp(FB_CFG);
+  FS = firebase.firestore();
+  /* Firestore mặc định NÉM LỖI nếu payload có field bằng undefined. Trong app này rất dễ dính
+     vì nhiều bản ghi dựng bằng { field: điềuKiện ? giáTrị : undefined }. Ném lỗi thì màn hình đã
+     đổi rồi mà máy chủ không nhận gì cả — bật cờ này để field undefined chỉ đơn giản là không
+     được ghi, chứ không giết cả lệnh ghi. */
+  try { FS.settings({ ignoreUndefinedProperties: true, merge: true }); } catch (e) { console.warn('firestore settings:', e.message); }
+  AUTH = firebase.auth();
+  try { AUTH.setPersistence(firebase.auth.Auth.Persistence.LOCAL); } catch (e) {}
+  return FS;
+}
+
+const AUTH_ERR = {
+  'auth/invalid-email': 'Email không hợp lệ',
+  'auth/user-not-found': 'Email này chưa được cấp tài khoản',
+  'auth/wrong-password': 'Sai mật khẩu',
+  'auth/invalid-credential': 'Sai email hoặc mật khẩu',
+  'auth/too-many-requests': 'Sai quá nhiều lần, thử lại sau ít phút',
+  'auth/network-request-failed': 'Mất mạng — thử lại',
+  'auth/operation-not-allowed': 'Chưa bật đăng nhập Email/Password trong Firebase Console',
+};
+const authMsg = (e) => AUTH_ERR[(e && e.code)] || (e && e.message) || 'Lỗi không xác định';
+
+/* ---- ĐỌC TOÀN BỘ DỮ LIỆU MỘT LẦN KHI VÀO APP ----
+   Bốn truy vấn chạy song song, tổng cỡ 40–80 document cho hai năm số liệu. Đọc hết một lượt
+   rồi giữ trong bộ nhớ thì mọi thao tác sau đó (đổi tháng, đổi trang, tính lại báo cáo) không
+   tốn thêm lượt đọc nào — rẻ hơn hẳn so với đọc lại theo từng màn hình. */
+async function cloudLoad() {
+  const grab = (col) => FS.collection(col).get().catch(e => { console.warn(col, e.message); return { docs: [] }; });
+  const [emp, cash, ts, pay, cfg] = await Promise.all([
+    grab(COL.emp), grab(COL.cash), grab(COL.ts), grab(COL.pay),
+    FS.collection(COL.cfg).doc('main').get().catch(() => null),
+  ]);
+  const out = { cash: [], employees: [], timesheet: {}, tsNames: {}, payroll: {}, closes: {}, cfg: {} };
+  emp.docs.forEach(d => out.employees.push({ ...d.data(), id: d.id }));
+  cash.docs.forEach(d => (d.data().rows || []).forEach(r => out.cash.push(r)));
+  ts.docs.forEach(d => { const v = d.data(); out.timesheet[d.id] = v.cells || {}; out.tsNames[d.id] = v.names || {}; });
+  pay.docs.forEach(d => {
+    const v = d.data();
+    out.payroll[d.id] = v.rows || {};
+    if (v.close) out.closes[d.id] = v.close;
+  });
+  if (cfg && cfg.exists) out.cfg = cfg.data() || {};
+  /* Nhân viên xếp theo tên cho mọi bảng đều cùng một thứ tự, không phụ thuộc thứ tự Firestore trả về */
+  out.employees.sort((a, b) => noAccent(a.name || '').localeCompare(noAccent(b.name || ''), 'vi'));
+  return out;
+}
+
+/* ---- GHI: GOM LẠI RỒI MỚI GỬI ----
+   Bảng chấm công gõ số liên tục, mỗi phím một lần ghi là mỗi phím một lần tính tiền. Gom các
+   thay đổi của cùng một document trong 700ms rồi gửi một lần. Rời trang / đóng tab thì đẩy nốt
+   phần còn treo, không để mất cái vừa gõ. */
+const pending = new Map();
+let flushTimer = null;
+const queueWrite = (path, data) => {
+  if (DEMO) return;
+  pending.set(path, data);
+  clearTimeout(flushTimer);
+  flushTimer = setTimeout(flushWrites, 700);
+};
+function flushWrites() {
+  if (!FS || !pending.size) return;
+  const batch = FS.batch();
+  pending.forEach((data, path) => {
+    const [col, id] = path.split('/');
+    batch.set(FS.collection(col).doc(id), data, { merge: false });
+  });
+  pending.clear();
+  batch.commit().catch(e => console.error('[CliffHouse] ghi thất bại:', e.message));
+}
+window.addEventListener('beforeunload', flushWrites);
+document.addEventListener('visibilitychange', () => { if (document.hidden) flushWrites(); });
+
+/* Gói lại dữ liệu của MỘT tháng / MỘT nhân viên rồi đẩy vào hàng chờ ghi */
+const pushCashMonth = (d, mk) => queueWrite(COL.cash + '/' + mk, { rows: d.cash.filter(x => String(x.date).slice(0, 7) === mk) });
+/* Bảng công mang theo luôn TÊN người trong tháng đó. Nhờ vậy kế toán chấm công được mà KHÔNG
+   cần quyền đọc hồ sơ nhân viên — nơi cất đơn giá giờ, tức là cất lương. Tên cũ được giữ lại
+   khi người ghi không có danh sách nhân viên trong tay. */
+const pushTsMonth = (d, mk) => {
+  const cells = (d.timesheet || {})[mk] || {};
+  const keep = { ...((d.tsNames || {})[mk] || {}) };
+  (d.employees || []).forEach(e => { if (cells[e.id]) keep[e.id] = { name: e.name, title: e.title || '' }; });
+  queueWrite(COL.ts + '/' + mk, { cells, names: keep });
+};
+const pushPayMonth = (d, mk) => queueWrite(COL.pay + '/' + mk, { rows: (d.payroll || {})[mk] || {}, close: (d.closes || {})[mk] || null });
+const pushCfg = (d) => queueWrite(COL.cfg + '/main', d.cfg || {});
+const pushEmp = (e) => { if (!DEMO && FS) FS.collection(COL.emp).doc(e.id).set(e).catch(err => console.error(err.message)); };
+const dropEmp = (id) => { if (!DEMO && FS) FS.collection(COL.emp).doc(id).delete().catch(err => console.error(err.message)); };
+
+/* ---- ĐẨY BỘ DỮ LIỆU MẪU LÊN FIRESTORE ----
+   Chỉ dùng một lần lúc mới dựng: đăng nhập vào mà màn hình trắng trơn thì không biết app hỏng
+   hay chỉ là chưa có số liệu. Có nút này thì nhìn thấy ngay mọi thứ chạy thật trên máy chủ. */
+async function seedToCloud(onStep) {
+  const d = seedDb();
+  /* Liệt kê theo dữ liệu THẬT đang có, không theo mốc cố định — sổ quỹ nạp tới đâu hiện tới đó */
+  const months = useMemo(() => {
+    const s = new Set((db.cash || []).map(c => String(c.date).slice(0, 7)));
+    Object.keys(db.timesheet || {}).forEach(k => s.add(k));
+    return Array.from(s).sort();
+  }, [db.cash, db.timesheet]);
+  let n = 0;
+  for (const mk of months) {
+    const batch = FS.batch();
+    batch.set(FS.collection(COL.cash).doc(mk), { rows: d.cash.filter(x => x.date.slice(0, 7) === mk) });
+    const cells = d.timesheet[mk] || {};
+    const names = {};
+    d.employees.forEach(e => { if (cells[e.id]) names[e.id] = { name: e.name, title: e.title || '' }; });
+    batch.set(FS.collection(COL.ts).doc(mk), { cells, names });
+    await batch.commit();
+    n++; if (onStep) onStep(n, months.length);
+  }
+  const eb = FS.batch();
+  d.employees.forEach(e => eb.set(FS.collection(COL.emp).doc(e.id), e));
+  eb.set(FS.collection(COL.cfg).doc('main'), d.cfg);
+  await eb.commit();
+  return months.length;
+}
+
+/* ---- XOÁ SẠCH ---- */
+async function wipeCloud() {
+  for (const col of [COL.cash, COL.ts, COL.pay, COL.emp]) {
+    const snap = await FS.collection(col).get();
+    for (let i = 0; i < snap.docs.length; i += 400) {
+      const b = FS.batch();
+      snap.docs.slice(i, i + 400).forEach(doc => b.delete(doc.ref));
+      await b.commit();
+    }
+  }
+}
+
+/* ===================== TÍNH TOÁN ===================== */
+/* Phiếu chi lương đã được "nhận" về một tháng công nào đó thì KHÔNG còn là chi phí
+   của tháng nó nằm trong sổ quỹ nữa — nếu không sẽ trừ lương hai lần. */
+const claimedIds = (db) => {
+  const s = new Set();
+  Object.values(db.closes || {}).forEach(c => (c.ids || []).forEach(id => s.add(id)));
+  return s;
+};
+
+const rowsOfMonth = (db, mk) => (db.cash || []).filter(x => String(x.date).slice(0, 7) === mk);
+
+/* Lương gộp phải trả cho tháng công mk — giờ × đơn giá, cộng mọi nhân viên */
+const grossOf = (db, mk) => {
+  const cells = (db.timesheet || {})[mk] || {};
+  return (db.employees || []).reduce((sum, e) => {
+    const row = cells[e.id] || {};
+    const h = Object.values(row).reduce((a, b) => a + (Number(b) || 0), 0);
+    return sum + h * (Number(e.rate) || 0);
+  }, 0);
+};
+const hoursOf = (db, mk, empId) => {
+  const row = ((db.timesheet || {})[mk] || {})[empId] || {};
+  return Object.values(row).reduce((a, b) => a + (Number(b) || 0), 0);
+};
+
+/* Tạm ứng app tự tìm được trong sổ quỹ cho một người trong một tháng */
+const autoAdvance = (db, mk, emp) => {
+  const key = noAccent(emp.name).toLowerCase();
+  return rowsOfMonth(db, mk)
+    .filter(x => x.type === 'chi' && x.cat === ADVANCE_CAT
+      && (x.empId === emp.id || noAccent(x.note || '').toLowerCase().includes(key)))
+    .reduce((a, b) => a + b.amount, 0);
+};
+
+/* Một dòng bảng lương — có ghi đè tay thì lấy tay, không thì lấy số app tính */
+const payRow = (db, mk, emp) => {
+  const ov = ((db.payroll || {})[mk] || {})[emp.id] || {};
+  const h = hoursOf(db, mk, emp.id);
+  const gross = h * (Number(emp.rate) || 0);
+  const auto = autoAdvance(db, mk, emp);
+  const adv = ov.advance != null ? Number(ov.advance) : auto;
+  const bhxh = Number(ov.bhxh) || 0;
+  return { emp, hours: h, gross, bhxh, advance: adv, advanceAuto: auto, advOverride: ov.advance != null, net: gross - bhxh - adv, paid: !!ov.paid };
+};
+
+/* Bộ số của một tháng — dùng chung cho cả ba trang báo cáo */
+function monthStats(db, mk) {
+  const claimed = claimedIds(db);
+  const rows = rowsOfMonth(db, mk);
+  const thu = rows.filter(x => x.type === 'thu').reduce((a, b) => a + b.amount, 0);
+  /* Tạm ứng lương là khoản ứng trước, không phải chi phí — nó đã bị trừ ở bảng lương.
+     Cộng vào tổng chi nữa là trừ hai lần. */
+  const chiRows = rows.filter(x => x.type === 'chi' && x.cat !== ADVANCE_CAT && !claimed.has(x.id));
+  const chi = chiRows.reduce((a, b) => a + b.amount, 0);
+  const close = (db.closes || {})[mk] || null;
+  const salary = close ? close.amount : grossOf(db, mk);
+  const profit = thu - chi - salary;
+  /* ---- CẢNH BÁO TRÙNG LƯƠNG ----
+     Phiếu chi loại "Chi phí Lương" chưa tháng công nào nhận thì ĐANG bị tính vào tổng chi,
+     trong khi lương tạm tính cũng đang bị trừ -> có nguy cơ trừ hai lần.
+     Nhưng loại này cũng hay dùng để trả thợ thời vụ / cộng tác viên, số nhỏ, không phải
+     lương nhân viên fulltime. Kêu ầm lên mỗi tháng thì người dùng sẽ quen tay bỏ qua, tới
+     lúc trùng thật cũng không ai nhìn. Nên chỉ báo khi số tiền đủ lớn so với lương tạm
+     tính (từ 50% trở lên) — cỡ đó thì gần như chắc chắn là tiền lương của một tháng công. */
+  const salaryVouchers = rows.filter(x => x.type === 'chi' && x.cat === SALARY_CAT && !claimed.has(x.id));
+  const vSum = salaryVouchers.reduce((a, b) => a + b.amount, 0);
+  const gross0 = grossOf(db, mk);
+  const orphan = (gross0 && vSum >= gross0 * 0.5) ? salaryVouchers : [];
+  return { mk, thu, chi, chiRows, salary, profit, closed: !!close, close, orphan, empty: rows.length === 0 };
+}
+
+/* Chi phí theo loại, xếp đúng thứ tự như báo cáo mẫu (theo chữ sau "Chi phí ") */
+const catKey = (nm) => noAccent(String(nm).replace(/^Chi phí\s+/i, '')).toLowerCase();
+function catBreak(db, mk) {
+  const st = monthStats(db, mk);
+  const by = {};
+  st.chiRows.forEach(r => { by[r.cat] = (by[r.cat] || 0) + r.amount; });
+  return Object.keys(by)
+    .sort((a, b) => catKey(a).localeCompare(catKey(b), 'vi'))
+    .map(c => ({ cat: c, amount: by[c], pct: st.chi ? by[c] / st.chi * 100 : 0, ...catMeta(c) }));
+}
+
+/* Cả năm — dùng cho trang P&L và dòng lũy kế của báo cáo */
+function yearStats(db, y) {
+  const months = [];
+  for (let m = 1; m <= 12; m++) months.push({ ...monthStats(db, mKey(y, m)), m });
+  const tot = months.reduce((a, s) => ({
+    thu: a.thu + s.thu, chi: a.chi + s.chi, salary: a.salary + s.salary, profit: a.profit + s.profit,
+  }), { thu: 0, chi: 0, salary: 0, profit: 0 });
+  return { y, months, tot };
+}
+
+/* Mọi loại chi từng xuất hiện trong một năm — làm cột cho bảng P&L */
+function yearCats(db, y) {
+  const set = {};
+  for (let m = 1; m <= 12; m++) {
+    catBreak(db, mKey(y, m)).forEach(c => { set[c.cat] = (set[c.cat] || 0) + c.amount; });
+  }
+  return Object.keys(set)
+    .sort((a, b) => catKey(a).localeCompare(catKey(b), 'vi'))
+    .map(c => ({ cat: c, total: set[c], ...catMeta(c) }));
+}
+
+/* ===================== MÃ QR VIETQR ===================== */
+/* Ảnh sinh bởi img.vietqr.io — máy phải có mạng thì QR mới hiện.
+   size 'qr_only' là mã trần, nhỏ gọn, vừa đúng một ô trong bảng lương. */
+const vietQr = (emp, amount, content, style) =>
+  'https://img.vietqr.io/image/' + emp.bin + '-' + emp.accNo + '-' + (style || 'qr_only') + '.png'
+  + '?amount=' + Math.max(0, n0(amount))
+  + '&addInfo=' + encodeURIComponent(content)
+  + '&accountName=' + encodeURIComponent(noAccent(emp.accName || emp.name));
+const qrContent = (emp, mk) => {
+  const { y, m } = mParse(mk);
+  return noAccent('LUONG T' + m + '.' + y + ' ' + emp.name).toUpperCase();
+};
+const hasBank = (e) => !!(e && e.bin && e.accNo);
+
+/* ===================== NGÂN HÀNG ===================== */
+const BANKS = [
+  { bin: '970436', name: 'Vietcombank' }, { bin: '970422', name: 'MB Bank' },
+  { bin: '970415', name: 'VietinBank' }, { bin: '970418', name: 'BIDV' },
+  { bin: '970407', name: 'Techcombank' }, { bin: '970432', name: 'VPBank' },
+  { bin: '970405', name: 'Agribank' }, { bin: '970423', name: 'TPBank' },
+  { bin: '970403', name: 'Sacombank' }, { bin: '970416', name: 'ACB' },
+  { bin: '970441', name: 'VIB' }, { bin: '970443', name: 'SHB' },
+  { bin: '970431', name: 'Eximbank' }, { bin: '970426', name: 'MSB' },
+  { bin: '970448', name: 'OCB' }, { bin: '970429', name: 'SCB' },
+  { bin: '546034', name: 'Cake by VPBank' }, { bin: '963388', name: 'Timo' },
+];
+const bankName = (bin) => (BANKS.find(b => b.bin === bin) || {}).name || bin || '—';
+
+/* ===================== MẢNH GHÉP GIAO DIỆN ===================== */
+function Modal({ title, sub, wide, onClose, children, foot }) {
+  useEffect(() => {
+    const k = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', k);
+    return () => document.removeEventListener('keydown', k);
+  }, [onClose]);
+  return (
+    <div className="mask" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className={cls('modal', wide && 'wide')}>
+        <div className="modal-h">
+          <div style={{ minWidth: 0 }}><h3>{title}</h3>{sub && <p>{sub}</p>}</div>
+          <button className="x" onClick={onClose} aria-label="Đóng"><Ic.x size={17} /></button>
+        </div>
+        <div className="modal-b">{children}</div>
+        {foot && <div className="modal-f">{foot}</div>}
+      </div>
+    </div>
+  );
+}
+
+function Stat({ label, value, sub, icon, tone, hero }) {
+  return (
+    <div className={cls('stat', hero && 'hero')}>
+      <div className="lb">{icon && <span className="ic-sq">{icon}</span>}{label}</div>
+      <div className="vl" style={tone ? { color: 'var(--' + tone + ')' } : null}>{value}</div>
+      {sub && <div className="dt">{sub}</div>}
+    </div>
+  );
+}
+
+/* Chênh lệch so kỳ trước — im lặng khi không có gì để so */
+function Delta({ cur, prev, invert, suffix }) {
+  const p = pctDiff(cur, prev);
+  if (p == null || !isFinite(p)) return <span style={{ color: 'var(--txt-3)' }}>chưa có kỳ để so</span>;
+  const up = p >= 0;
+  const good = invert ? !up : up;
+  return (
+    <span className={good ? 'up' : 'dn'}>
+      {up ? <Ic.arrowU size={12} /> : <Ic.arrowD size={12} />}
+      {' '}{Math.abs(p).toFixed(1).replace('.', ',')}% {suffix || ''}
+    </span>
+  );
+}
+
+/* Chọn tháng — mũi tên trái phải cho việc lật nhanh, ô chọn cho việc nhảy xa */
+function MonthPick({ value, onChange, min, max }) {
+  const opts = useMemo(() => {
+    const out = [];
+    let k = min || '2025-01';
+    const end = max || thisMonth();
+    while (k <= end) { out.push(k); k = mAdd(k, 1); }
+    return out.reverse();
+  }, [min, max]);
+  const i = opts.indexOf(value);
+  return (
+    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+      <button className="btn sm" disabled={i >= opts.length - 1} onClick={() => onChange(opts[i + 1])} aria-label="Tháng trước">‹</button>
+      <select className="inp" style={{ width: 'auto', minWidth: 148, fontWeight: 600 }} value={value} onChange={e => onChange(e.target.value)}>
+        {opts.map(k => <option key={k} value={k}>{mLabel(k)}</option>)}
+      </select>
+      <button className="btn sm" disabled={i <= 0} onClick={() => onChange(opts[i - 1])} aria-label="Tháng sau">›</button>
+    </div>
+  );
+}
+
+/* Danh sách thanh ngang — dùng cho bảng chi phí theo loại */
+function Bars({ rows, max, onPick }) {
+  const top = max || Math.max(1, ...rows.map(r => Math.abs(r.value)));
+  if (!rows.length) return <div className="empty">Tháng này chưa có khoản chi nào.</div>;
+  return (
+    <div>
+      {rows.map((r, i) => (
+        <div className="bar-row" key={r.key || i} onClick={onPick ? () => onPick(r) : null}
+          style={onPick ? { cursor: 'pointer' } : null}>
+          <div className="nm" title={r.label}>
+            {r.emoji && <b style={{ fontSize: 14 }}>{r.emoji}</b>}
+            <span>{r.label}</span>
+          </div>
+          <div className="bar-track">
+            <div className="bar-fill" style={{ width: Math.max(2, Math.abs(r.value) / top * 100) + '%', background: r.color || 'var(--brand)' }} />
+          </div>
+          <div className="vl">{money(r.value)}</div>
+          <div className="pc">{r.pct != null ? r.pct.toFixed(1).replace('.', ',') + '%' : ''}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* Biểu đồ cột 12 tháng — vẽ tay bằng SVG, không cần thư viện ngoài.
+   Có cột âm thì trục 0 tự dời xuống đúng chỗ, không vẽ đè ra ngoài khung. */
+function Columns({ data, height, fmt, colorOf, onPick, active }) {
+  const H = height || 210, PAD = 26;
+  const vals = data.map(d => d.value);
+  const hi = Math.max(0, ...vals), lo = Math.min(0, ...vals);
+  const span = (hi - lo) || 1;
+  const zeroY = PAD + (hi / span) * (H - PAD * 2);
+  const n = data.length || 1;
+  const bw = 100 / n;
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <svg viewBox={'0 0 100 ' + H} preserveAspectRatio="none" style={{ width: '100%', height: H, display: 'block', minWidth: n > 8 ? 420 : 0 }}>
+        <line x1="0" x2="100" y1={zeroY} y2={zeroY} stroke="var(--line)" strokeWidth="0.3" vectorEffect="non-scaling-stroke" />
+        {data.map((d, i) => {
+          const h = Math.abs(d.value) / span * (H - PAD * 2);
+          const y = d.value >= 0 ? zeroY - h : zeroY;
+          const on = active === i;
+          return (
+            <rect key={i} x={i * bw + bw * 0.22} y={y} width={bw * 0.56} height={Math.max(1.5, h)} rx="1.4"
+              fill={colorOf ? colorOf(d, i) : (d.value >= 0 ? 'var(--brand)' : 'var(--red)')}
+              opacity={active == null || on ? 1 : 0.42}
+              style={onPick ? { cursor: 'pointer' } : null}
+              onClick={onPick ? () => onPick(i) : null} />
+          );
+        })}
+      </svg>
+      <div style={{ display: 'flex', minWidth: n > 8 ? 420 : 0 }}>
+        {data.map((d, i) => (
+          <div key={i} style={{ flex: 1, textAlign: 'center', fontSize: 10.5, color: active === i ? 'var(--txt)' : 'var(--txt-3)', fontWeight: active === i ? 700 : 500, padding: '5px 0 0', cursor: onPick ? 'pointer' : null }}
+            onClick={onPick ? () => onPick(i) : null}>
+            <div>{d.label}</div>
+            <div style={{ fontVariantNumeric: 'tabular-nums', fontSize: 10, marginTop: 1 }}>{(fmt || short)(d.value)}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* Vòng tròn tỉ trọng — chỉ vẽ tối đa 8 lát, phần còn lại gộp thành "Khác" */
+function Donut({ slices, size }) {
+  const S = size || 168, R = S / 2 - 12, C = S / 2, CIRC = 2 * Math.PI * R;
+  const tot = slices.reduce((a, s) => a + s.value, 0) || 1;
+  let acc = 0;
+  return (
+    <svg width={S} height={S} viewBox={'0 0 ' + S + ' ' + S} style={{ flex: '0 0 auto' }}>
+      <circle cx={C} cy={C} r={R} fill="none" stroke="var(--line-soft)" strokeWidth="18" />
+      {slices.map((s, i) => {
+        const frac = s.value / tot;
+        const dash = frac * CIRC;
+        const el = (
+          <circle key={i} cx={C} cy={C} r={R} fill="none" stroke={s.color} strokeWidth="18"
+            strokeDasharray={dash + ' ' + (CIRC - dash)} strokeDashoffset={-acc}
+            transform={'rotate(-90 ' + C + ' ' + C + ')'} strokeLinecap="butt" />
+        );
+        acc += dash;
+        return el;
+      })}
+      <text x={C} y={C - 4} textAnchor="middle" fontSize="11" fill="var(--txt-3)" fontWeight="600">Tổng chi</text>
+      <text x={C} y={C + 14} textAnchor="middle" fontSize="14" fill="var(--txt)" fontWeight="800" style={{ fontVariantNumeric: 'tabular-nums' }}>{short(tot)}</text>
+    </svg>
+  );
+}
+
+/* ===================== NGỮ CẢNH ỨNG DỤNG ===================== */
+const AppCtx = createContext(null);
+const useApp = () => useContext(AppCtx);
+
+function Toast({ msg }) {
+  if (!msg) return null;
+  return (
+    <div style={{
+      position: 'fixed', left: '50%', bottom: 26, transform: 'translateX(-50%)', zIndex: 200,
+      background: 'var(--ink)', color: '#fff', padding: '11px 18px', borderRadius: 12,
+      boxShadow: 'var(--sh-3)', fontSize: 13.5, fontWeight: 600, maxWidth: '90vw', textAlign: 'center',
+    }}>{msg}</div>
+  );
+}
+
+/* ===================== TRANG 1 — BÁO CÁO TỔNG HỢP ===================== */
+/* Dựng đúng khuôn báo cáo đang dùng, số lấy thẳng từ dữ liệu nên không bao giờ lệch */
+function buildReport(db, mk) {
+  const { y, m } = mParse(mk);
+  const st = monthStats(db, mk);
+  const cats = catBreak(db, mk);
+  const ys = yearStats(db, y);
+  const L = [];
+  L.push('📌 BÁO CÁO TỔNG HỢP');
+  L.push('📅 ' + pad2(daysIn(y, m)) + '/' + pad2(m) + '/' + y);
+  L.push('📍 Tháng ' + m + ' – Năm ' + y);
+  L.push('━━━━━━━━━━');
+  L.push('📘 TỔNG QUAN');
+  L.push('💰 TỔNG THU: ' + moneyD(st.thu));
+  L.push('💸 TỔNG CHI: ' + moneyD(st.chi));
+  L.push('📊 CHI PHÍ LƯƠNG ' + (st.closed ? 'ĐÃ CHỐT' : 'TẠM TÍNH') + ': ' + moneyD(st.salary));
+  L.push((st.profit >= 0 ? '👍' : '👎') + ' LỢI NHUẬN: ' + moneyD(st.profit));
+  L.push('━━━━━━━━━━');
+  L.push('📋 CHI TIẾT CHI PHÍ TRONG THÁNG');
+  L.push('💸 TỔNG CHI: ' + moneyD(st.chi));
+  cats.forEach(c => L.push(c.e + ' ' + c.cat + ': ' + moneyD(c.amount)));
+  L.push('━━━━━━━━━━');
+  L.push('📊 LŨY KẾ LỢI NHUẬN ' + y);
+  let acc = 0;
+  ys.months.forEach(s => {
+    if (s.m > m) return;
+    if (s.empty) return;
+    acc += s.profit;
+    L.push('🎯 Tháng ' + s.m + ': ' + moneyD(s.profit));
+  });
+  L.push('👉 Lũy kế: ' + moneyD(acc));
+  return L.join('\n');
+}
+
+function ReportPage() {
+  const { db, toast } = useApp();
+  const [mk, setMk] = useState(() => {
+    /* Mặc định mở tháng gần nhất CÓ dữ liệu — đầu tháng mà mở ra trang trắng thì rất vô duyên */
+    let k = thisMonth();
+    for (let i = 0; i < 24; i++) { if (rowsOfMonth(db, k).length) return k; k = mAdd(k, -1); }
+    return thisMonth();
+  });
+  const st = useMemo(() => monthStats(db, mk), [db, mk]);
+  const prev = useMemo(() => monthStats(db, mAdd(mk, -1)), [db, mk]);
+  const lastY = useMemo(() => monthStats(db, mAdd(mk, -12)), [db, mk]);
+  const cats = useMemo(() => catBreak(db, mk), [db, mk]);
+  const { y, m } = mParse(mk);
+  const ys = useMemo(() => yearStats(db, y), [db, y]);
+  const txt = useMemo(() => buildReport(db, mk), [db, mk]);
+
+  const cum = useMemo(() => {
+    let a = 0;
+    return ys.months.map(s => { if (!s.empty) a += s.profit; return { label: 'T' + s.m, value: s.empty ? 0 : s.profit, cum: a, empty: s.empty }; });
+  }, [ys]);
+  const cumTotal = cum.filter(c => !c.empty && mParse(mk).m >= +c.label.slice(1)).reduce((a, b) => a + b.value, 0);
+
+  const copy = () => {
+    const done = () => toast('Đã chép báo cáo — dán thẳng vào Zalo/Telegram được luôn');
+    if (navigator.clipboard) navigator.clipboard.writeText(txt).then(done).catch(() => fallback());
+    else fallback();
+    function fallback() {
+      const ta = document.createElement('textarea');
+      ta.value = txt; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); done(); } catch (e) { toast('Máy không cho chép tự động — bôi đen rồi Ctrl+C'); }
+      document.body.removeChild(ta);
+    }
+  };
+
+  const margin = st.thu ? st.profit / st.thu * 100 : 0;
+
+  return (
+    <div>
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card-h">
+          <div><h3>Kỳ báo cáo</h3><p>Chọn tháng cần xem — mọi con số bên dưới đổi theo</p></div>
+          <div className="sp">
+            <MonthPick value={mk} onChange={setMk} />
+            {st.closed
+              ? <span className="tag t-green"><Ic.lock size={12} /> Đã chốt lương</span>
+              : <span className="tag t-amber"><Ic.unlock size={12} /> Lương tạm tính</span>}
+          </div>
+        </div>
+      </div>
+
+      {st.empty && <div className="banner"><Ic.warn size={16} /><div><b>Tháng này chưa có dữ liệu sổ quỹ.</b> Vào Cấu hình bấm Đồng bộ KiotViet để kéo về.</div></div>}
+      {!!st.orphan.length && !st.closed && (
+        <div className="banner"><Ic.warn size={16} /><div>
+          <b>Cảnh báo trừ lương hai lần.</b> Tháng này có {st.orphan.length} phiếu chi loại "{SALARY_CAT}"
+          ({moneyD(st.orphan.reduce((a, b) => a + b.amount, 0))}) đang được tính vào TỔNG CHI, trong khi
+          lương tạm tính cũng đang bị trừ. Nếu đây là tiền lương của tháng trước thì sang trang
+          Bảng lương tháng đó bấm <b>Chốt đã chi lương</b> để gán về đúng kỳ.
+        </div></div>
+      )}
+
+      <div className="stats">
+        <Stat label="Tổng thu" value={money(st.thu)} icon={<span>💰</span>}
+          sub={<><Delta cur={st.thu} prev={prev.thu} /> so tháng trước</>} />
+        <Stat label="Tổng chi" value={money(st.chi)} icon={<span>💸</span>} tone="red"
+          sub={<><Delta cur={st.chi} prev={prev.chi} invert /> so tháng trước</>} />
+        <Stat label={'Chi phí lương ' + (st.closed ? 'đã chốt' : 'tạm tính')} value={money(st.salary)} icon={<span>📊</span>} tone="violet"
+          sub={<>{grossOf(db, mk) ? hrs(Object.values((db.timesheet || {})[mk] || {}).reduce((a, r) => a + Object.values(r).reduce((x, z) => x + (+z || 0), 0), 0)) + ' giờ công' : 'chưa nhập công'}</>} />
+        <Stat hero label="Lợi nhuận" value={money(st.profit)} icon={<span>{st.profit >= 0 ? '👍' : '👎'}</span>}
+          sub={<>Biên {margin.toFixed(1).replace('.', ',')}% · <Delta cur={st.profit} prev={lastY.profit} suffix={'so T' + m + '/' + (y - 1)} /></>} />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.15fr) minmax(0,1fr)', gap: 16, alignItems: 'start' }} className="rp-grid">
+        <div className="card" style={{ margin: 0 }}>
+          <div className="card-h">
+            <div><h3>Lợi nhuận 12 tháng năm {y}</h3><p>Lũy kế tới {mLabel(mk).toLowerCase()}: <b style={{ color: cumTotal >= 0 ? 'var(--green)' : 'var(--red)' }}>{moneyD(cumTotal)}</b></p></div>
+          </div>
+          <div className="chart-wrap">
+            <Columns data={cum} active={m - 1} onPick={(i) => setMk(mKey(y, i + 1))}
+              colorOf={(d, i) => d.empty ? 'var(--line)' : i === m - 1 ? 'var(--ink)' : d.value >= 0 ? 'var(--brand)' : 'var(--red)'} />
+          </div>
+        </div>
+
+        <div className="card" style={{ margin: 0 }}>
+          <div className="card-h"><div><h3>Cơ cấu chi phí</h3><p>{cats.length} loại chi trong tháng</p></div></div>
+          <div className="card-b" style={{ display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap' }}>
+            <Donut slices={cats.slice(0, 8).map(c => ({ value: c.amount, color: c.c }))} />
+            <div style={{ flex: 1, minWidth: 180 }}>
+              {cats.slice(0, 6).map(c => (
+                <div key={c.cat} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 0', fontSize: 12.5 }}>
+                  <i style={{ width: 10, height: 10, borderRadius: 3, background: c.c, flex: '0 0 10px' }} />
+                  <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--txt-2)' }}>{c.cat.replace(/^Chi phí\s+/, '')}</span>
+                  <b className="mono">{c.pct.toFixed(1).replace('.', ',')}%</b>
+                </div>
+              ))}
+              {cats.length > 6 && <div className="hint" style={{ marginTop: 5 }}>…và {cats.length - 6} loại nữa</div>}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 16 }}>
+        <div className="card-h">
+          <div><h3>Báo cáo để gửi</h3><p>Đúng khuôn đang dùng — bấm Chép rồi dán thẳng vào Zalo, Telegram, email</p></div>
+          <div className="sp"><button className="btn pri" onClick={copy}><Ic.copy size={15} /> Chép báo cáo</button></div>
+        </div>
+        <div className="card-b"><div className="report">{txt}</div></div>
+      </div>
+    </div>
+  );
+}
+
+/* ===================== TRANG 2 — CHI TIẾT CHI PHÍ ===================== */
+function ExpensePage() {
+  const { db } = useApp();
+  const [mk, setMk] = useState(() => {
+    let k = thisMonth();
+    for (let i = 0; i < 24; i++) { if (rowsOfMonth(db, k).length) return k; k = mAdd(k, -1); }
+    return thisMonth();
+  });
+  const [pick, setPick] = useState(null);
+  const st = useMemo(() => monthStats(db, mk), [db, mk]);
+  const prev = useMemo(() => monthStats(db, mAdd(mk, -1)), [db, mk]);
+  const cats = useMemo(() => catBreak(db, mk), [db, mk]);
+  const prevCats = useMemo(() => catBreak(db, mAdd(mk, -1)), [db, mk]);
+  const prevOf = (c) => (prevCats.find(x => x.cat === c) || {}).amount || 0;
+  const { y } = mParse(mk);
+
+  /* Gom theo nhóm lớn để nhìn ra bức tranh, không chìm trong mười mấy dòng lặt vặt */
+  const groups = useMemo(() => {
+    const by = {};
+    cats.forEach(c => { by[c.g] = (by[c.g] || 0) + c.amount; });
+    return Object.keys(by).sort((a, b) => by[b] - by[a]).map(g => ({
+      g, amount: by[g], pct: st.chi ? by[g] / st.chi * 100 : 0,
+      color: (cats.find(c => c.g === g) || {}).c || 'var(--brand)',
+    }));
+  }, [cats, st.chi]);
+
+  /* Đường đi 12 tháng của loại chi đang chọn */
+  const trend = useMemo(() => {
+    if (!pick) return null;
+    const out = [];
+    for (let m = 1; m <= 12; m++) {
+      const k = mKey(y, m);
+      const v = catBreak(db, k).find(c => c.cat === pick.cat);
+      out.push({ label: 'T' + m, value: v ? v.amount : 0 });
+    }
+    return out;
+  }, [pick, db, y]);
+
+  const vouchers = useMemo(() => {
+    if (!pick) return [];
+    return st.chiRows.filter(r => r.cat === pick.cat).sort((a, b) => a.date.localeCompare(b.date));
+  }, [pick, st.chiRows]);
+
+  const biggest = cats.length ? cats.reduce((a, b) => (b.amount > a.amount ? b : a)) : null;
+  const jumps = cats.map(c => ({ ...c, prev: prevOf(c.cat), d: pctDiff(c.amount, prevOf(c.cat)) }))
+    .filter(c => c.d != null && isFinite(c.d) && Math.abs(c.d) >= 25 && c.amount >= 500000)
+    .sort((a, b) => Math.abs(b.d) - Math.abs(a.d)).slice(0, 4);
+
+  return (
+    <div>
+      <div className="card">
+        <div className="card-h">
+          <div><h3>Kỳ xem</h3><p>Bấm vào một loại chi để xem từng phiếu và đường đi cả năm</p></div>
+          <div className="sp"><MonthPick value={mk} onChange={setMk} /></div>
+        </div>
+      </div>
+
+      <div className="stats">
+        <Stat label="Tổng chi trong tháng" value={money(st.chi)} icon={<span>💸</span>} tone="red"
+          sub={<><Delta cur={st.chi} prev={prev.chi} invert /> so tháng trước</>} />
+        <Stat label="Số loại chi" value={cats.length} icon={<span>📋</span>}
+          sub={st.chiRows.length + ' phiếu chi'} />
+        <Stat label="Khoản lớn nhất" value={biggest ? short(biggest.amount) : '—'} icon={<span>{biggest ? biggest.e : '—'}</span>}
+          sub={biggest ? biggest.cat.replace(/^Chi phí\s+/, '') + ' · ' + biggest.pct.toFixed(0) + '% tổng chi' : ''} />
+        <Stat label="Chi / Thu" value={(st.thu ? st.chi / st.thu * 100 : 0).toFixed(1).replace('.', ',') + '%'} icon={<span>⚖️</span>}
+          sub={'Thu ' + short(st.thu) + ' · chi ' + short(st.chi)} />
+      </div>
+
+      {!!jumps.length && (
+        <div className="card">
+          <div className="card-h"><div><h3>Biến động đáng để ý</h3><p>Loại chi tăng/giảm trên 25% so với {mLabel(mAdd(mk, -1)).toLowerCase()}</p></div></div>
+          <div className="card-b" style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            {jumps.map(j => (
+              <div key={j.cat} style={{
+                border: '1px solid var(--line)', borderRadius: 12, padding: '10px 13px',
+                background: j.d > 0 ? 'var(--red-wash)' : 'var(--green-wash)', minWidth: 190, flex: '1 1 190px',
+              }}>
+                <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 3 }}>{j.e} {j.cat.replace(/^Chi phí\s+/, '')}</div>
+                <div style={{ fontSize: 17, fontWeight: 800, color: j.d > 0 ? 'var(--red)' : 'var(--green)' }} className="mono">
+                  {j.d > 0 ? '+' : ''}{j.d.toFixed(0)}%
+                </div>
+                <div className="hint">{money(j.prev)} → <b>{money(j.amount)}</b></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.5fr) minmax(0,1fr)', gap: 16, alignItems: 'start' }} className="rp-grid">
+        <div className="card" style={{ margin: 0 }}>
+          <div className="card-h"><div><h3>Chi phí theo loại</h3><p>Tên loại lấy nguyên từ sổ quỹ KiotViet</p></div></div>
+          <div className="card-b">
+            <Bars onPick={setPick} rows={cats.map(c => ({
+              key: c.cat, label: c.cat.replace(/^Chi phí\s+/, ''), emoji: c.e, value: c.amount, pct: c.pct, color: c.c, cat: c.cat,
+            }))} />
+          </div>
+        </div>
+        <div className="card" style={{ margin: 0 }}>
+          <div className="card-h"><div><h3>Gom theo nhóm</h3><p>Tiền thật chảy về đâu</p></div></div>
+          <div className="card-b bars-tight">
+            <Bars rows={groups.map(g => ({ key: g.g, label: g.g, value: g.amount, pct: g.pct, color: g.color }))} />
+          </div>
+        </div>
+      </div>
+
+      {pick && (
+        <Modal wide title={pick.emoji + ' ' + pick.cat} sub={mLabel(mk) + ' · ' + moneyD(pick.value) + ' · ' + pick.pct.toFixed(1).replace('.', ',') + '% tổng chi'}
+          onClose={() => setPick(null)} foot={<button className="btn" onClick={() => setPick(null)}>Đóng</button>}>
+          <div className="eyebrow" style={{ marginBottom: 8 }}>Cả năm {y}</div>
+          <Columns data={trend} height={150} active={mParse(mk).m - 1}
+            colorOf={(d, i) => i === mParse(mk).m - 1 ? 'var(--ink)' : catMeta(pick.cat).c} />
+          <div className="eyebrow" style={{ margin: '20px 0 8px' }}>{vouchers.length} phiếu chi trong tháng</div>
+          <div className="scroll-x">
+            <table className="tb">
+              <thead><tr><th>Ngày</th><th>Số phiếu</th><th>Diễn giải</th><th className="r">Số tiền</th></tr></thead>
+              <tbody>
+                {vouchers.map(v => (
+                  <tr key={v.id}>
+                    <td className="mono">{dFull(v.date)}</td>
+                    <td className="mono" style={{ color: 'var(--txt-3)', fontSize: 12 }}>{v.code}</td>
+                    <td>{v.note}</td>
+                    <td className="r"><b>{money(v.amount)}</b></td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot><tr><td colSpan="3">Tổng</td><td className="r">{money(pick.value)}</td></tr></tfoot>
+            </table>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+/* ===================== TRANG 3 — P&L THEO NĂM ===================== */
+function PnlPage() {
+  const { db } = useApp();
+  const [y, setY] = useState(() => new Date().getFullYear());
+  const years = useMemo(() => {
+    const s = new Set();
+    (db.cash || []).forEach(c => s.add(+String(c.date).slice(0, 4)));
+    const a = Array.from(s).sort((x, z) => z - x);
+    return a.length ? a : [new Date().getFullYear()];
+  }, [db.cash]);
+  const ys = useMemo(() => yearStats(db, y), [db, y]);
+  const prevYs = useMemo(() => yearStats(db, y - 1), [db, y]);
+  const cats = useMemo(() => yearCats(db, y), [db, y]);
+  const live = ys.months.filter(s => !s.empty);
+
+  /* Bảng rất rộng (14 cột) — cho cuộn ngang, cột đầu ghim lại để không lạc dòng */
+  const catRow = (c) => ys.months.map(s => {
+    const b = catBreak(db, s.mk).find(x => x.cat === c.cat);
+    return b ? b.amount : 0;
+  });
+
+  const best = live.length ? live.reduce((a, b) => (b.profit > a.profit ? b : a)) : null;
+  const worst = live.length ? live.reduce((a, b) => (b.profit < a.profit ? b : a)) : null;
+
+  return (
+    <div>
+      <div className="card">
+        <div className="card-h">
+          <div><h3>Báo cáo lãi lỗ năm {y}</h3><p>Doanh thu · chi phí từng loại · lợi nhuận, 12 tháng trên một bảng</p></div>
+          <div className="sp">
+            <select className="inp" style={{ width: 'auto', fontWeight: 600 }} value={y} onChange={e => setY(+e.target.value)}>
+              {years.map(v => <option key={v} value={v}>Năm {v}</option>)}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div className="stats">
+        <Stat label={'Doanh thu ' + y} value={money(ys.tot.thu)} icon={<span>💰</span>}
+          sub={<><Delta cur={ys.tot.thu} prev={prevYs.tot.thu} /> so năm {y - 1}</>} />
+        <Stat label="Tổng chi phí" value={money(ys.tot.chi + ys.tot.salary)} icon={<span>💸</span>} tone="red"
+          sub={'Gồm lương ' + short(ys.tot.salary)} />
+        <Stat hero label={'Lợi nhuận ' + y} value={money(ys.tot.profit)} icon={<span>{ys.tot.profit >= 0 ? '👍' : '👎'}</span>}
+          sub={<>Biên {(ys.tot.thu ? ys.tot.profit / ys.tot.thu * 100 : 0).toFixed(1).replace('.', ',')}% · <Delta cur={ys.tot.profit} prev={prevYs.tot.profit} /></>} />
+        <Stat label="Tháng tốt nhất" value={best ? 'T' + best.m : '—'} icon={<span>🏆</span>} tone="green"
+          sub={best ? money(best.profit) + ' đ · thấp nhất T' + worst.m + ' (' + short(worst.profit) + ')' : ''} />
+      </div>
+
+      <div className="card">
+        <div className="card-h"><div><h3>Lợi nhuận theo tháng</h3><p>Cột xám là tháng chưa có dữ liệu</p></div></div>
+        <div className="chart-wrap">
+          <Columns data={ys.months.map(s => ({ label: 'T' + s.m, value: s.empty ? 0 : s.profit, empty: s.empty }))}
+            colorOf={(d) => d.empty ? 'var(--line)' : d.value >= 0 ? 'var(--brand)' : 'var(--red)'} />
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-h">
+          <div><h3>Bảng P&amp;L chi tiết</h3><p>Cuộn ngang để xem hết 12 tháng · cột Cả năm ghim ở cuối</p></div>
+        </div>
+        <div className="scroll-x">
+          <table className="tb" style={{ minWidth: 1100 }}>
+            <thead>
+              <tr>
+                <th style={{ position: 'sticky', left: 0, zIndex: 2, background: '#FCFBF9', minWidth: 210 }}>Khoản mục</th>
+                {ys.months.map(s => <th key={s.m} className="r" style={{ opacity: s.empty ? .4 : 1 }}>T{s.m}</th>)}
+                <th className="r" style={{ background: 'var(--brand-wash)', color: 'var(--brand-dark)' }}>Cả năm</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style={{ background: 'var(--green-wash)' }}>
+                <td style={{ position: 'sticky', left: 0, zIndex: 1, background: 'var(--green-wash)', fontWeight: 700 }}>💰 Doanh thu</td>
+                {ys.months.map(s => <td key={s.m} className="r mono">{s.thu ? short(s.thu) : '—'}</td>)}
+                <td className="r mono" style={{ background: 'var(--brand-wash)', fontWeight: 800 }}>{short(ys.tot.thu)}</td>
+              </tr>
+              {cats.map(c => {
+                const vals = catRow(c);
+                return (
+                  <tr key={c.cat}>
+                    <td style={{ position: 'sticky', left: 0, zIndex: 1, background: '#fff', whiteSpace: 'nowrap' }}>
+                      <span style={{ marginRight: 6 }}>{c.e}</span>{c.cat.replace(/^Chi phí\s+/, '')}
+                    </td>
+                    {vals.map((v, i) => <td key={i} className="r mono" style={{ color: v ? 'var(--txt-2)' : 'var(--txt-3)' }}>{v ? short(v) : '·'}</td>)}
+                    <td className="r mono" style={{ background: 'var(--brand-wash)', fontWeight: 700 }}>{short(c.total)}</td>
+                  </tr>
+                );
+              })}
+              <tr style={{ background: '#FCFBF9' }}>
+                <td style={{ position: 'sticky', left: 0, zIndex: 1, background: '#FCFBF9', fontWeight: 700 }}>💸 Tổng chi sổ quỹ</td>
+                {ys.months.map(s => <td key={s.m} className="r mono"><b>{s.chi ? short(s.chi) : '—'}</b></td>)}
+                <td className="r mono" style={{ background: 'var(--brand-wash)', fontWeight: 800 }}>{short(ys.tot.chi)}</td>
+              </tr>
+              <tr style={{ background: 'var(--violet-wash)' }}>
+                <td style={{ position: 'sticky', left: 0, zIndex: 1, background: 'var(--violet-wash)', fontWeight: 700 }}>📊 Chi phí lương</td>
+                {ys.months.map(s => (
+                  <td key={s.m} className="r mono" title={s.closed ? 'Đã chốt' : 'Tạm tính'}>
+                    {s.salary ? short(s.salary) : '—'}{s.salary && !s.closed ? '*' : ''}
+                  </td>
+                ))}
+                <td className="r mono" style={{ background: 'var(--brand-wash)', fontWeight: 800 }}>{short(ys.tot.salary)}</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td style={{ position: 'sticky', left: 0, zIndex: 1, background: '#FCFBF9' }}>👍 Lợi nhuận</td>
+                {ys.months.map(s => (
+                  <td key={s.m} className="r mono" style={{ color: s.empty ? 'var(--txt-3)' : s.profit >= 0 ? 'var(--green)' : 'var(--red)' }}>
+                    {s.empty ? '—' : short(s.profit)}
+                  </td>
+                ))}
+                <td className="r mono" style={{ background: 'var(--brand-wash)', color: ys.tot.profit >= 0 ? 'var(--green)' : 'var(--red)' }}>{short(ys.tot.profit)}</td>
+              </tr>
+              <tr>
+                <td style={{ position: 'sticky', left: 0, zIndex: 1, background: '#FCFBF9', fontWeight: 500, color: 'var(--txt-3)' }}>Biên lợi nhuận</td>
+                {ys.months.map(s => (
+                  <td key={s.m} className="r mono" style={{ fontWeight: 500, color: 'var(--txt-3)' }}>
+                    {s.empty || !s.thu ? '—' : (s.profit / s.thu * 100).toFixed(0) + '%'}
+                  </td>
+                ))}
+                <td className="r mono" style={{ background: 'var(--brand-wash)', fontWeight: 600 }}>
+                  {ys.tot.thu ? (ys.tot.profit / ys.tot.thu * 100).toFixed(1).replace('.', ',') + '%' : '—'}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <div className="card-b" style={{ paddingTop: 10, borderTop: '1px solid var(--line-soft)' }}>
+          <div className="hint">Số có dấu <b>*</b> là lương tạm tính (chưa bấm chốt đã chi). Mọi số rút gọn — rê chuột hoặc xem trang Báo cáo để thấy số đầy đủ.</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* Màn hẹp thì bảng 31 cột không dùng được — đổi sang chọn người rồi gõ trên tờ lịch.
+   Nghe theo cỡ màn hình thật chứ không đoán qua "là điện thoại hay không": xoay ngang máy
+   tính bảng hay thu nhỏ cửa sổ trên máy bàn đều phải đổi theo. */
+function useNarrow(px) {
+  const q = '(max-width:' + (px || 960) + 'px)';
+  const [on, setOn] = useState(() => window.matchMedia(q).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(q);
+    const f = (e) => setOn(e.matches);
+    mq.addEventListener ? mq.addEventListener('change', f) : mq.addListener(f);
+    return () => (mq.removeEventListener ? mq.removeEventListener('change', f) : mq.removeListener(f));
+  }, [q]);
+  return on;
+}
+
+/* Tờ lịch công của MỘT người trong MỘT tháng.
+   Ô trống là ngày nghỉ — không tự điền gì cả, đúng như bảng trên máy tính.
+   Gõ xong bấm phím "tiếp" trên bàn phím là nhảy sang ngày sau, khỏi phải chấm tay từng ô. */
+function PersonSheet({ emp, mk, locked, seePay, onClose }) {
+  const { db, setCell } = useApp();
+  const { y, m } = mParse(mk);
+  const dim = daysIn(y, m);
+  const row = ((db.timesheet || {})[mk] || {})[emp.id] || {};
+  const total = Object.values(row).reduce((a, b) => a + (Number(b) || 0), 0);
+  /* Tuần bắt đầu từ thứ Hai — lịch Việt Nam, và cuối tuần nằm gọn hai ô cuối cho dễ nhìn */
+  const lead = (dowOf(y, m, 1) + 6) % 7;
+  const cells = Array.from({ length: lead }, () => null)
+    .concat(Array.from({ length: dim }, (_, i) => i + 1));
+  const go = (d) => {
+    const el = document.querySelector('[data-p="' + d + '"]');
+    if (el) { el.focus(); el.select(); }
+  };
+  return (
+    <Modal title={emp.name}
+      sub={(emp.title || '') + ' · ' + mLabel(mk).toLowerCase() + ' · ' + hrs(total) + ' giờ'
+        + (seePay && emp.rate ? ' · ' + money(total * emp.rate) + ' đ' : '')}
+      onClose={onClose}
+      foot={<button className="btn pri" onClick={onClose}>Xong</button>}>
+      {locked && <div className="banner"><Ic.lock size={16} /><div>Tháng này đã chốt lương nên không sửa được công.</div></div>}
+      <div className="ts-cal">
+        {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map(d => <div key={d} className="hd">{d}</div>)}
+        {cells.map((d, i) => {
+          if (d == null) return <div key={'p' + i} className="cel pad" />;
+          const v = row[d];
+          return (
+            <div key={d} className={cls('cel', isWeekend(y, m, d) && 'we', v && 'has')}>
+              <small>{d}</small>
+              <input data-p={d} inputMode="decimal" enterKeyHint="next" disabled={locked}
+                value={v == null ? '' : v} placeholder="–"
+                onFocus={e => e.target.select()}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); go(d + 1); } }}
+                onChange={e => setCell(mk, emp.id, d, e.target.value)} />
+            </div>
+          );
+        })}
+      </div>
+      <div className="hint" style={{ marginTop: 14 }}>
+        Để trống là ngày nghỉ. Gõ xong bấm phím <b>tiếp</b> trên bàn phím để nhảy sang ngày sau.
+      </div>
+    </Modal>
+  );
+}
+
+/* ===================== TRANG 4 — CHẤM CÔNG ===================== */
+function TimesheetPage() {
+  const { db, setCell, user } = useApp();
+  const [mk, setMk] = useState(thisMonth);
+  const { y, m } = mParse(mk);
+  const dim = daysIn(y, m);
+  const st = monthStats(db, mk);
+  const locked = st.closed;
+  /* Chỉ chủ mới thấy tiền. Kế toán nhìn thấy giờ công, không thấy đơn giá và không thấy thành tiền. */
+  const seePay = !user || user.role !== 'acct';
+  const cells = (db.timesheet || {})[mk] || {};
+  /* Có quyền đọc hồ sơ nhân viên thì lấy từ đó; không có (kế toán) thì lấy tên đã lưu kèm
+     trong chính bảng công của tháng — bảng vẫn chấm được bình thường. */
+  const emps = (db.employees || []).length
+    ? (db.employees || []).filter(e => e.status === 'active' || hoursOf(db, mk, e.id) > 0)
+    : Object.keys(cells).map(id => ({ id, rate: 0, ...(((db.tsNames || {})[mk] || {})[id] || { name: id }) }));
+  const days = Array.from({ length: dim }, (_, i) => i + 1);
+  const narrow = useNarrow(960);
+  const [who, setWho] = useState(null);
+
+  const rowTotal = (e) => Object.values(cells[e.id] || {}).reduce((a, b) => a + (Number(b) || 0), 0);
+  const dayTotal = (d) => emps.reduce((a, e) => a + (Number((cells[e.id] || {})[d]) || 0), 0);
+  const grandH = emps.reduce((a, e) => a + rowTotal(e), 0);
+  const grandMoney = emps.reduce((a, e) => a + rowTotal(e) * (Number(e.rate) || 0), 0);
+
+  /* Bảng này gõ số liên tục — mũi tên và Enter phải đi được giữa các ô như Excel,
+     không thì phải rời tay ra chuột 800 lần một tháng. */
+  const move = (ei, d, de, dd) => {
+    const ni = ei + de, nd = d + dd;
+    if (ni < 0 || ni >= emps.length || nd < 1 || nd > dim) return;
+    const el = document.querySelector('[data-c="' + emps[ni].id + '_' + nd + '"]');
+    if (el) { el.focus(); el.select(); }
+  };
+  const onKey = (ei, d) => (e) => {
+    const k = e.key;
+    if (k === 'ArrowDown' || k === 'Enter') { e.preventDefault(); move(ei, d, 1, 0); }
+    else if (k === 'ArrowUp') { e.preventDefault(); move(ei, d, -1, 0); }
+    else if (k === 'ArrowRight' && e.target.selectionStart === e.target.value.length) { e.preventDefault(); move(ei, d, 0, 1); }
+    else if (k === 'ArrowLeft' && e.target.selectionStart === 0) { e.preventDefault(); move(ei, d, 0, -1); }
+  };
+
+  return (
+    <div>
+      <div className="card">
+        <div className="card-h">
+          <div><h3>Bảng công {mLabel(mk).toLowerCase()}</h3>
+            <p>{narrow ? 'Bấm vào tên người để chấm công cho người đó' : 'Gõ thẳng số giờ vào ô · Enter hoặc mũi tên để đi tiếp · để trống là ngày nghỉ'}</p></div>
+          <div className="sp">
+            <MonthPick value={mk} onChange={setMk} />
+            {locked && <span className="tag t-green"><Ic.lock size={12} /> Đã chốt — không sửa được</span>}
+          </div>
+        </div>
+      </div>
+
+      <div className="stats">
+        <Stat label="Tổng giờ công" value={hrs(grandH)} icon={<Ic.clock size={13} />} sub={emps.length + ' người có công'} />
+        {seePay
+          ? <Stat label="Lương gộp phải trả" value={money(grandMoney)} icon={<span>📊</span>} tone="violet"
+            sub="Đây chính là dòng 'chi phí lương' trong báo cáo" />
+          : <Stat label="Số người có công" value={emps.length} icon={<span>👥</span>}
+            sub="Đơn giá và thành tiền chỉ chủ xem được" />}
+        <Stat label="Giờ công bình quân" value={emps.length ? hrs(grandH / emps.length) : '0'} icon={<span>👤</span>} sub="mỗi người / tháng" />
+        <Stat label="Ngày đông nhất" value={(() => { let b = 1; days.forEach(d => { if (dayTotal(d) > dayTotal(b)) b = d; }); return dayTotal(b) ? d0(b) + '/' + m : '—'; })()}
+          icon={<span>📆</span>} sub={(() => { let b = 1; days.forEach(d => { if (dayTotal(d) > dayTotal(b)) b = d; }); return dayTotal(b) ? hrs(dayTotal(b)) + ' giờ' : ''; })()} />
+      </div>
+
+      <div className="card">
+        <div className="card-b" style={{ padding: 12 }}>
+          {!emps.length
+            ? <div className="empty">Chưa có nhân viên nào đang làm việc. Vào trang Nhân viên thêm người trước.</div>
+            : narrow ? (
+              /* Màn hẹp: danh sách người, bấm vào ai thì mở tờ lịch công của người đó */
+              <div>
+                {emps.map(e => {
+                  const h = rowTotal(e);
+                  return (
+                    <button key={e.id} className="ts-person" onClick={() => setWho(e)}>
+                      <div className="av">{initials(e.name)}</div>
+                      <div className="nm">
+                        <b>{e.name}</b>
+                        <small>{e.title}{seePay && e.rate ? ' · ' + money(e.rate) + 'đ/giờ' : ''}</small>
+                      </div>
+                      <div className="hh">
+                        <b style={{ color: h ? 'var(--txt)' : 'var(--txt-3)' }}>{hrs(h)}</b>
+                        <small>{h ? 'giờ' + (seePay && e.rate ? ' · ' + short(h * e.rate) : '') : 'chưa chấm'}</small>
+                      </div>
+                      <Ic.chev size={17} style={{ color: 'var(--txt-3)' }} />
+                    </button>
+                  );
+                })}
+                <div style={{
+                  display: 'flex', justifyContent: 'space-between', padding: '14px 14px 2px',
+                  fontSize: 13.5, fontWeight: 700,
+                }}>
+                  <span>Tổng cả tháng</span>
+                  <span className="mono">{hrs(grandH)} giờ{seePay ? ' · ' + money(grandMoney) + ' đ' : ''}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="ts-wrap">
+                <table className="ts">
+                  <thead>
+                    <tr>
+                      <th className="fix">Nhân viên</th>
+                      {days.map(d => (
+                        <th key={d} className={isWeekend(y, m, d) ? 'we' : ''} title={['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][dowOf(y, m, d)]}>
+                          {d}<div style={{ fontSize: 8.5, fontWeight: 600, opacity: .75 }}>{['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][dowOf(y, m, d)]}</div>
+                        </th>
+                      ))}
+                      <th className="tot">Tổng giờ</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {emps.map((e, ei) => (
+                      <tr key={e.id}>
+                        <td className="fix">
+                          <b>{e.name}</b>
+                          <small>{e.title}{seePay && e.rate ? ' · ' + money(e.rate) + 'đ/giờ' : ''}{e.status === 'off' ? ' · đã nghỉ' : ''}</small>
+                        </td>
+                        {days.map(d => {
+                          const v = (cells[e.id] || {})[d];
+                          return (
+                            <td key={d} className={cls('cell', isWeekend(y, m, d) && 'we', v && 'has')}>
+                              <input data-c={e.id + '_' + d} inputMode="decimal" disabled={locked}
+                                value={v == null ? '' : v}
+                                onKeyDown={onKey(ei, d)}
+                                onFocus={ev => ev.target.select()}
+                                onChange={ev => setCell(mk, e.id, d, ev.target.value)} />
+                            </td>
+                          );
+                        })}
+                        <td className="tot">
+                          {hrs(rowTotal(e))}
+                          {seePay && e.rate
+                            ? <div style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--txt-3)' }}>{short(rowTotal(e) * e.rate)}</div>
+                            : null}
+                        </td>
+                      </tr>
+                    ))}
+                    <tr>
+                      <td className="fix" style={{ background: '#FCFBF9', fontWeight: 700 }}><b>Tổng theo ngày</b></td>
+                      {days.map(d => (
+                        <td key={d} className={cls('cell', isWeekend(y, m, d) && 'we')} style={{ background: '#FCFBF9', fontWeight: 700, fontSize: 11.5, color: dayTotal(d) ? 'var(--txt-2)' : 'var(--txt-3)' }}>
+                          {dayTotal(d) ? hrs(dayTotal(d)) : '·'}
+                        </td>
+                      ))}
+                      <td className="tot" style={{ color: 'var(--brand-dark)' }}>{hrs(grandH)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            )}
+        </div>
+      </div>
+
+      {who && <PersonSheet emp={who} mk={mk} locked={locked} seePay={seePay} onClose={() => setWho(null)} />}
+    </div>
+  );
+}
+const d0 = (d) => String(d);
+
+/* ===================== TRANG 5 — BẢNG LƯƠNG ===================== */
+function PayrollPage() {
+  const { db, setPay, closeMonth, openMonth, toast } = useApp();
+  const [mk, setMk] = useState(() => mAdd(thisMonth(), -1));
+  const [zoom, setZoom] = useState(null);
+  const [closing, setClosing] = useState(false);
+  const st = monthStats(db, mk);
+  const emps = (db.employees || []).filter(e => hoursOf(db, mk, e.id) > 0 || e.status === 'active');
+  const rows = emps.map(e => payRow(db, mk, e)).filter(r => r.hours > 0 || r.bhxh || r.advance);
+  const tot = rows.reduce((a, r) => ({
+    hours: a.hours + r.hours, gross: a.gross + r.gross, bhxh: a.bhxh + r.bhxh,
+    advance: a.advance + r.advance, net: a.net + r.net,
+  }), { hours: 0, gross: 0, bhxh: 0, advance: 0, net: 0 });
+  const paidCount = rows.filter(r => r.paid).length;
+  const noBank = rows.filter(r => !hasBank(r.emp));
+
+  return (
+    <div>
+      <div className="card">
+        <div className="card-h">
+          <div>
+            <h3>Bảng lương {mLabel(mk).toLowerCase()}</h3>
+            <p>Giờ công × đơn giá − BHXH − tạm ứng = số nằm trong mã QR</p>
+          </div>
+          <div className="sp">
+            <MonthPick value={mk} onChange={setMk} />
+            {st.closed
+              ? <>
+                <span className="tag t-green"><Ic.lock size={12} /> Đã chốt · {moneyD(st.close.amount)}</span>
+                <button className="btn sm" onClick={() => { openMonth(mk); toast('Đã mở chốt — tháng này quay lại dùng lương tạm tính'); }}>
+                  <Ic.unlock size={13} /> Mở chốt
+                </button>
+              </>
+              : <>
+                <span className="tag t-amber"><Ic.unlock size={12} /> Tạm tính</span>
+                <button className="btn dark" onClick={() => setClosing(true)}><Ic.check size={14} /> Chốt đã chi lương</button>
+              </>}
+          </div>
+        </div>
+      </div>
+
+      {st.closed && (
+        <div className="banner" style={{ background: 'var(--green-wash)', borderColor: '#BFE3D0', color: '#0B5E3E' }}>
+          <Ic.check size={16} />
+          <div>
+            <b>Tháng này đã chốt.</b> Lợi nhuận {mLabel(mk).toLowerCase()} đang dùng số lương thực chi {moneyD(st.close.amount)}
+            {st.close.ids && st.close.ids.length ? <> (từ {st.close.ids.length} phiếu chi trong sổ quỹ, đã được loại khỏi chi phí của tháng chúng nằm trong để không trừ hai lần)</> : null}.
+          </div>
+        </div>
+      )}
+      {!!noBank.length && (
+        <div className="banner"><Ic.warn size={16} /><div>
+          <b>{noBank.length} người chưa có số tài khoản</b> nên không sinh được mã QR: {noBank.map(r => r.emp.name).join(', ')}.
+          Bổ sung ở trang Nhân viên.
+        </div></div>
+      )}
+
+      <div className="stats">
+        <Stat label="Lương gộp" value={money(tot.gross)} icon={<span>📊</span>} sub={hrs(tot.hours) + ' giờ · ' + rows.length + ' người'} />
+        <Stat label="BHXH trừ" value={money(tot.bhxh)} icon={<span>🧾</span>} tone="violet" sub="gõ tay từng người" />
+        <Stat label="Tạm ứng đã lấy" value={money(tot.advance)} icon={<span>💸</span>} tone="amber" sub="lấy từ sổ quỹ, sửa đè được" />
+        <Stat hero label="Thực chuyển khoản" value={money(tot.net)} icon={<span>🏦</span>}
+          sub={'Đã chuyển ' + paidCount + '/' + rows.length + ' người'} />
+      </div>
+
+      <div className="card">
+        <div className="card-h"><div><h3>Chi tiết từng người</h3><p>Bấm mã QR để phóng to · tích ô cuối khi đã chuyển xong</p></div></div>
+        <div className="scroll-x">
+          <table className="tb" style={{ minWidth: 980 }}>
+            <thead>
+              <tr>
+                <th>Nhân viên</th>
+                <th className="r">Giờ</th>
+                <th className="r">Đơn giá</th>
+                <th className="r">Lương gộp</th>
+                <th className="r" style={{ minWidth: 118 }}>BHXH</th>
+                <th className="r" style={{ minWidth: 130 }}>Tạm ứng</th>
+                <th className="r">Thực lĩnh</th>
+                <th style={{ width: 70, textAlign: 'center' }}>QR</th>
+                <th style={{ width: 96, textAlign: 'center' }}>Đã chuyển</th>
+              </tr>
+            </thead>
+            <tbody>
+              {!rows.length && <tr><td colSpan="9"><div className="empty">Tháng này chưa ai có giờ công. Vào trang Chấm công nhập giờ trước.</div></td></tr>}
+              {rows.map(r => (
+                <tr key={r.emp.id} style={r.paid ? { opacity: .62 } : null}>
+                  <td>
+                    <b>{r.emp.name}</b>
+                    <div className="hint">{r.emp.title} · {bankName(r.emp.bin)} {r.emp.accNo || '—'}</div>
+                  </td>
+                  <td className="r mono">{hrs(r.hours)}</td>
+                  <td className="r mono" style={{ color: 'var(--txt-3)' }}>{money(r.emp.rate)}</td>
+                  <td className="r mono"><b>{money(r.gross)}</b></td>
+                  <td className="r">
+                    <input className="inp num" inputMode="numeric" disabled={st.closed}
+                      value={r.bhxh ? money(r.bhxh) : ''} placeholder="0"
+                      onChange={e => setPay(mk, r.emp.id, { bhxh: n0(e.target.value.replace(/\D/g, '')) })} />
+                  </td>
+                  <td className="r">
+                    <input className="inp num" inputMode="numeric" disabled={st.closed}
+                      value={r.advance ? money(r.advance) : ''} placeholder="0"
+                      onChange={e => setPay(mk, r.emp.id, { advance: n0(e.target.value.replace(/\D/g, '')) })} />
+                    {r.advanceAuto > 0 && (
+                      <div className="hint" style={{ marginTop: 3 }}>
+                        {r.advOverride
+                          ? <>sổ quỹ: {money(r.advanceAuto)} · <button className="btn sm" style={{ padding: '1px 6px', boxShadow: 'none' }}
+                            onClick={() => setPay(mk, r.emp.id, { advance: null })}>lấy lại</button></>
+                          : <>tự lấy từ sổ quỹ</>}
+                      </div>
+                    )}
+                  </td>
+                  <td className="r mono"><b style={{ fontSize: 14.5, color: r.net >= 0 ? 'var(--txt)' : 'var(--red)' }}>{money(r.net)}</b></td>
+                  <td style={{ textAlign: 'center' }}>
+                    {hasBank(r.emp) && r.net > 0
+                      ? <img className="qr-sm" loading="lazy" alt={'QR ' + r.emp.name}
+                        src={vietQr(r.emp, r.net, qrContent(r.emp, mk))}
+                        onClick={() => setZoom(r)} />
+                      : <div className="qr-ph">{hasBank(r.emp) ? 'không có tiền' : 'thiếu STK'}</div>}
+                  </td>
+                  <td style={{ textAlign: 'center' }}>
+                    <input type="checkbox" style={{ width: 18, height: 18, accentColor: 'var(--brand)' }}
+                      checked={r.paid} onChange={e => setPay(mk, r.emp.id, { paid: e.target.checked })} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            {!!rows.length && (
+              <tfoot>
+                <tr>
+                  <td>Tổng {rows.length} người</td>
+                  <td className="r mono">{hrs(tot.hours)}</td>
+                  <td></td>
+                  <td className="r mono">{money(tot.gross)}</td>
+                  <td className="r mono">{money(tot.bhxh)}</td>
+                  <td className="r mono">{money(tot.advance)}</td>
+                  <td className="r mono" style={{ fontSize: 15, color: 'var(--brand-dark)' }}>{money(tot.net)}</td>
+                  <td colSpan="2"></td>
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
+        <div className="card-b" style={{ paddingTop: 10, borderTop: '1px solid var(--line-soft)' }}>
+          <div className="hint">
+            Mã QR theo chuẩn VietQR (img.vietqr.io) — máy cần có mạng thì ảnh mới hiện. Quét bằng app ngân hàng nào
+            cũng ra sẵn số tiền và nội dung “{rows.length ? qrContent(rows[0].emp, mk) : 'LUONG T…'}”.
+          </div>
+        </div>
+      </div>
+
+      {zoom && (
+        <Modal title={zoom.emp.name} sub={bankName(zoom.emp.bin) + ' · ' + zoom.emp.accNo + ' · ' + moneyD(zoom.net)}
+          onClose={() => setZoom(null)}
+          foot={<>
+            <button className="btn" onClick={() => setZoom(null)}>Đóng</button>
+            <button className={cls('btn', zoom.paid ? '' : 'pri')} onClick={() => { setPay(mk, zoom.emp.id, { paid: !zoom.paid }); setZoom(null); }}>
+              <Ic.check size={14} /> {zoom.paid ? 'Bỏ đánh dấu' : 'Đánh dấu đã chuyển'}
+            </button>
+          </>}>
+          <div style={{ textAlign: 'center' }}>
+            <img alt="Mã QR chuyển khoản" style={{ width: '100%', maxWidth: 320, borderRadius: 14, border: '1px solid var(--line)' }}
+              src={vietQr(zoom.emp, zoom.net, qrContent(zoom.emp, mk), 'compact2')} />
+            <div className="mono" style={{ fontSize: 13, color: 'var(--txt-2)', marginTop: 10 }}>{qrContent(zoom.emp, mk)}</div>
+          </div>
+        </Modal>
+      )}
+
+      {closing && <CloseModal mk={mk} gross={tot.gross} onClose={() => setClosing(false)}
+        onDone={(amount, ids) => { closeMonth(mk, amount, ids); setClosing(false); toast('Đã chốt lương ' + mLabel(mk).toLowerCase()); }} />}
+    </div>
+  );
+}
+
+/* ---- CHỐT ĐÃ CHI LƯƠNG ----
+   Lương tháng 8 thường tới ngày 10/9 mới chi, nên phiếu chi nằm ở sổ quỹ THÁNG 9.
+   Chốt là việc nhận phiếu chi đó về đúng tháng công: tháng 8 dùng số thực chi thay cho
+   số tạm tính, còn tháng 9 không bị tính khoản đó vào chi phí nữa. */
+function CloseModal({ mk, gross, onClose, onDone }) {
+  const { db } = useApp();
+  const claimed = claimedIds(db);
+  const cands = useMemo(() => {
+    const out = [];
+    for (let i = 0; i <= 2; i++) {
+      rowsOfMonth(db, mAdd(mk, i)).forEach(r => {
+        if (r.type === 'chi' && r.cat === SALARY_CAT && !claimed.has(r.id)) out.push(r);
+      });
+    }
+    return out.sort((a, b) => a.date.localeCompare(b.date));
+  }, [db, mk]);
+  /* KHÔNG tự tích sẵn. Loại "Chi phí Lương" trong sổ quỹ hay lẫn tiền thợ thời vụ, tiền
+     cộng tác viên — tích sẵn rồi bấm cho nhanh là chốt nhầm một con số bé tí, lợi nhuận
+     tháng đó phình lên vô cớ. Không chọn gì thì mặc định giữ nguyên lương tạm tính. */
+  const [sel, setSel] = useState([]);
+  const [manual, setManual] = useState('');
+  const selSum = cands.filter(c => sel.includes(c.id)).reduce((a, b) => a + b.amount, 0);
+  const amount = manual !== '' ? n0(manual.replace(/\D/g, '')) : (selSum || gross);
+  const tog = (id) => setSel(s => s.includes(id) ? s.filter(x => x !== id) : s.concat(id));
+
+  return (
+    <Modal wide title={'Chốt lương ' + mLabel(mk).toLowerCase()}
+      sub="Chọn phiếu chi lương thực tế trong sổ quỹ — kể cả khi nó nằm ở tháng sau"
+      onClose={onClose}
+      foot={<>
+        <button className="btn" onClick={onClose}>Huỷ</button>
+        <button className="btn pri" onClick={() => onDone(amount, sel)}>
+          <Ic.lock size={14} /> Chốt {moneyD(amount)}
+        </button>
+      </>}>
+      <div className="banner" style={{ background: 'var(--blue-wash)', borderColor: '#C9DCF2', color: '#1C4D85' }}>
+        <Ic.warn size={16} />
+        <div>Lương tạm tính đang là <b>{moneyD(gross)}</b>. Chốt xong, lợi nhuận {mLabel(mk).toLowerCase()} sẽ dùng
+          số bên dưới, và những phiếu chi được chọn sẽ <b>không còn tính vào chi phí của tháng chúng nằm trong</b>.</div>
+      </div>
+
+      <div className="eyebrow" style={{ margin: '4px 0 8px' }}>Phiếu chi loại “{SALARY_CAT}” chưa gán tháng nào</div>
+      {!cands.length
+        ? <div className="empty" style={{ padding: 24 }}>
+          Không tìm thấy phiếu chi lương nào trong {mLabel(mk).toLowerCase()} và 2 tháng kế tiếp.<br />
+          Vẫn chốt được — số lương sẽ lấy đúng bằng lương tạm tính.
+        </div>
+        : (
+          <table className="tb">
+            <thead><tr><th style={{ width: 36 }}></th><th>Ngày</th><th>Nằm ở tháng</th><th>Diễn giải</th><th className="r">Số tiền</th></tr></thead>
+            <tbody>
+              {cands.map(c => (
+                <tr key={c.id} onClick={() => tog(c.id)} style={{ cursor: 'pointer' }}>
+                  <td><input type="checkbox" readOnly checked={sel.includes(c.id)} style={{ width: 17, height: 17, accentColor: 'var(--brand)' }} /></td>
+                  <td className="mono">{dFull(c.date)}</td>
+                  <td>{c.date.slice(0, 7) === mk ? <span className="tag t-gray">cùng tháng</span> : <span className="tag t-blue">{mLabel(c.date.slice(0, 7))}</span>}</td>
+                  <td>{c.note}</td>
+                  <td className="r mono"><b>{money(c.amount)}</b></td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot><tr><td colSpan="4">Đã chọn {sel.length} phiếu</td><td className="r mono">{money(selSum)}</td></tr></tfoot>
+          </table>
+        )}
+
+      <div className="fld" style={{ marginTop: 16 }}>
+        <label>Số lương chốt cho {mLabel(mk).toLowerCase()}</label>
+        <input className="inp num" inputMode="numeric" value={money(amount)}
+          onChange={e => setManual(e.target.value)} />
+        <div className="hint" style={{ marginTop: 5 }}>
+          Để nguyên là lấy tổng phiếu đã chọn{!selSum ? ' (hiện chưa chọn phiếu nào nên đang lấy lương tạm tính)' : ''}. Gõ đè nếu muốn con số khác.
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+/* ===================== TRANG 6 — NHÂN VIÊN ===================== */
+function StaffPage() {
+  const { db, saveEmp, delEmp, toast } = useApp();
+  const [edit, setEdit] = useState(null);
+  const [showOff, setShowOff] = useState(false);
+  const list = (db.employees || []).filter(e => showOff || e.status === 'active');
+  const mkNow = mAdd(thisMonth(), -1);
+
+  return (
+    <div>
+      <div className="card">
+        <div className="card-h">
+          <div><h3>Nhân viên</h3><p>{(db.employees || []).filter(e => e.status === 'active').length} người đang làm · đơn giá giờ dùng để tính lương</p></div>
+          <div className="sp">
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: 'var(--txt-2)', fontWeight: 600 }}>
+              <input type="checkbox" checked={showOff} onChange={e => setShowOff(e.target.checked)} style={{ accentColor: 'var(--brand)' }} />
+              Hiện cả người đã nghỉ
+            </label>
+            <button className="btn pri" onClick={() => setEdit({ id: '', name: '', title: '', rate: 25000, phone: '', joined: todayKey(), bin: '970436', accNo: '', accName: '', status: 'active' })}>
+              <Ic.plus size={15} /> Thêm nhân viên
+            </button>
+          </div>
+        </div>
+        <div className="scroll-x">
+          <table className="tb" style={{ minWidth: 900 }}>
+            <thead>
+              <tr>
+                <th>Họ tên</th><th>Chức danh</th><th className="r">Đơn giá giờ</th>
+                <th>Số điện thoại</th><th>Vào làm</th><th>Tài khoản nhận lương</th>
+                <th className="r">Giờ {mLabel(mkNow).toLowerCase()}</th><th style={{ width: 90 }}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {!list.length && <tr><td colSpan="8"><div className="empty">Chưa có ai. Bấm “Thêm nhân viên” để bắt đầu.</div></td></tr>}
+              {list.map(e => (
+                <tr key={e.id} style={e.status !== 'active' ? { opacity: .55 } : null}>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                      <div className="av">{initials(e.name)}</div>
+                      <div><b>{e.name}</b>{e.status !== 'active' && <div><span className="tag t-gray">đã nghỉ</span></div>}</div>
+                    </div>
+                  </td>
+                  <td>{e.title || '—'}</td>
+                  <td className="r mono"><b>{money(e.rate)}</b> đ</td>
+                  <td className="mono" style={{ fontSize: 12.5 }}>{e.phone || '—'}</td>
+                  <td className="mono" style={{ fontSize: 12.5, color: 'var(--txt-3)' }}>{e.joined ? dFull(e.joined) : '—'}</td>
+                  <td>
+                    {hasBank(e)
+                      ? <div style={{ fontSize: 12.5 }}><b>{bankName(e.bin)}</b><div className="hint mono">{e.accNo} · {e.accName}</div></div>
+                      : <span className="tag t-amber"><Ic.warn size={11} /> chưa có STK</span>}
+                  </td>
+                  <td className="r mono">{hoursOf(db, mkNow, e.id) ? hrs(hoursOf(db, mkNow, e.id)) : '—'}</td>
+                  <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    <button className="btn sm" onClick={() => setEdit({ ...e })}><Ic.edit size={13} /></button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {edit && <StaffModal emp={edit} onClose={() => setEdit(null)}
+        onSave={(e) => { saveEmp(e); setEdit(null); toast('Đã lưu hồ sơ ' + e.name); }}
+        onDelete={edit.id ? () => {
+          if (!window.confirm('Xoá hẳn ' + edit.name + '? Giờ công và lịch sử lương của người này sẽ không còn hiện ra.\n\nNếu chỉ là nghỉ việc thì nên đổi trạng thái sang "Đã nghỉ" thay vì xoá.')) return;
+          delEmp(edit.id); setEdit(null); toast('Đã xoá ' + edit.name);
+        } : null} />}
+    </div>
+  );
+}
+
+function StaffModal({ emp, onClose, onSave, onDelete }) {
+  const [f, setF] = useState(emp);
+  const set = (p) => setF(x => ({ ...x, ...p }));
+  const ok = f.name.trim() && Number(f.rate) > 0;
+  return (
+    <Modal title={emp.id ? 'Sửa hồ sơ' : 'Thêm nhân viên'} sub={emp.id ? emp.name : 'Điền tên và đơn giá giờ là đủ để chấm công'}
+      onClose={onClose}
+      foot={<>
+        {onDelete && <button className="btn danger" onClick={onDelete} style={{ marginRight: 'auto' }}><Ic.trash size={14} /> Xoá</button>}
+        <button className="btn" onClick={onClose}>Huỷ</button>
+        <button className="btn pri" disabled={!ok} onClick={() => onSave({ ...f, id: f.id || uid(), rate: n0(f.rate) })}>Lưu</button>
+      </>}>
+      <div className="grid2">
+        <div className="fld"><label>Họ tên *</label>
+          <input className="inp" value={f.name} onChange={e => set({ name: e.target.value })} placeholder="Nguyễn Văn A" autoFocus /></div>
+        <div className="fld"><label>Chức danh</label>
+          <input className="inp" value={f.title} onChange={e => set({ title: e.target.value })} placeholder="Lễ tân" /></div>
+      </div>
+      <div className="grid2">
+        <div className="fld"><label>Đơn giá giờ (đ) *</label>
+          <input className="inp num" inputMode="numeric" value={money(f.rate)}
+            onChange={e => set({ rate: n0(e.target.value.replace(/\D/g, '')) })} /></div>
+        <div className="fld"><label>Trạng thái</label>
+          <select className="inp" value={f.status} onChange={e => set({ status: e.target.value })}>
+            <option value="active">Đang làm</option>
+            <option value="off">Đã nghỉ</option>
+          </select></div>
+      </div>
+      <div className="grid2">
+        <div className="fld"><label>Số điện thoại</label>
+          <input className="inp" value={f.phone} onChange={e => set({ phone: e.target.value })} placeholder="09xx xxx xxx" /></div>
+        <div className="fld"><label>Ngày vào làm</label>
+          <input className="inp" type="date" value={f.joined || ''} onChange={e => set({ joined: e.target.value })} /></div>
+      </div>
+
+      <div className="eyebrow" style={{ margin: '16px 0 9px' }}>Tài khoản nhận lương — cần đủ 3 ô thì mới sinh được mã QR</div>
+      <div className="fld"><label>Ngân hàng</label>
+        <select className="inp" value={f.bin} onChange={e => set({ bin: e.target.value })}>
+          {BANKS.map(b => <option key={b.bin} value={b.bin}>{b.name}</option>)}
+        </select></div>
+      <div className="grid2">
+        <div className="fld"><label>Số tài khoản</label>
+          <input className="inp mono" value={f.accNo} onChange={e => set({ accNo: e.target.value.replace(/[^\d]/g, '') })} placeholder="chỉ gồm chữ số" /></div>
+        <div className="fld"><label>Tên chủ tài khoản</label>
+          <input className="inp" value={f.accName} onChange={e => set({ accName: noAccent(e.target.value).toUpperCase() })} placeholder="NGUYEN VAN A" /></div>
+      </div>
+      {hasBank(f) && (
+        <div style={{ display: 'flex', gap: 14, alignItems: 'center', background: '#FCFBF9', border: '1px solid var(--line)', borderRadius: 12, padding: 12 }}>
+          <img alt="QR thử" style={{ width: 96, height: 96, borderRadius: 8, background: '#fff' }}
+            src={vietQr(f, 0, 'THU QR ' + noAccent(f.name).toUpperCase())} />
+          <div className="hint">Mã thử không kèm số tiền. Quét bằng app ngân hàng để kiểm tra xem có ra đúng
+            <b> {f.accName || '—'}</b> không — sai một chữ số là chuyển nhầm người.</div>
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+
+/* =====================================================================
+   NẠP SỔ QUỸ TỪ FILE XUẤT CỦA KIOTVIET
+   ---------------------------------------------------------------------
+   Gói KiotViet Hotel đang dùng không mở API, nhưng màn hình Sổ quỹ xuất được
+   Excel/CSV — thế là đủ. Mỗi tháng xuất một lần rồi thả vào đây.
+
+   KHÔNG đoán mò cấu trúc file: app dò tên cột rồi ĐỀ XUẤT cách ghép, người
+   dùng nhìn bảng xem trước mà xác nhận. Ghép xong thì nhớ lại, lần sau thả
+   file vào là chạy thẳng. KiotViet đổi tên cột cũng chỉ mất công ghép lại
+   một lần, không phải sửa code.
+===================================================================== */
+
+/* Thư viện đọc .xlsx nặng gần 1MB — chỉ tải khi thật sự mở hộp thoại nạp file,
+   không bắt mọi người tải kèm mỗi lần mở app. */
+const XLSX_CDN = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+const loadScript = (src) => new Promise((ok, err) => {
+  if (document.querySelector('script[data-lazy="' + src + '"]')) return ok();
+  const s = document.createElement('script');
+  s.src = src; s.dataset.lazy = src;
+  s.onload = () => ok();
+  s.onerror = () => err(new Error('Không tải được thư viện đọc Excel — kiểm tra mạng'));
+  document.head.appendChild(s);
+});
+
+/* ---- ĐỌC CSV ----
+   Tự đoán dấu ngăn cột: KiotViet xuất dấu phẩy, nhưng Excel bản tiếng Việt lưu lại
+   thành chấm phẩy, mà tiền Việt lại dùng dấu chấm ngăn nghìn — đoán sai một cái là
+   lệch hết cột. Đếm thử từng loại ở dòng đầu, cái nào nhiều nhất thì lấy. */
+function parseCsv(text) {
+  text = text.replace(/^﻿/, '');
+  /* Dò dấu ngăn cột trên NHIỀU dòng, không chỉ dòng đầu: file xuất của KiotViet có mấy dòng tên
+     khách sạn / khoảng thời gian ở trên, những dòng đó không có dấu ngăn nào cả. Dò trúng một
+     dòng rác là cả file bị đọc thành đúng một cột. Lấy dấu nào chia được nhiều cột nhất. */
+  const probe = text.split('\n').slice(0, 15).filter(l => l.trim());
+  const sep = [',', ';', '\t'].map(c => [c, Math.max(0, ...probe.map(l => l.split(c).length))])
+    .sort((a, b) => b[1] - a[1])[0][0];
+  const rows = [];
+  let row = [], cell = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+      else if (c === '"') q = false;
+      else cell += c;
+    } else if (c === '"') q = true;
+    else if (c === sep) { row.push(cell); cell = ''; }
+    else if (c === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+    else if (c !== '\r') cell += c;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  return rows;
+}
+
+async function readSheet(file) {
+  if (/\.csv$/i.test(file.name)) return parseCsv(await file.text());
+  await loadScript(XLSX_CDN);
+  const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  /* raw:false để ngày tháng về dạng chữ đã định dạng sẵn, khỏi phải giải mã số thứ tự ngày của Excel */
+  return XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' });
+}
+
+/* ---- TÌM DÒNG TIÊU ĐỀ ----
+   File xuất thường có vài dòng tên công ty / khoảng thời gian ở trên trước khi tới tiêu đề cột. */
+const HDR_HINTS = ['ngay', 'thoi gian', 'ma phieu', 'loai', 'gia tri', 'so tien', 'dien giai', 'thu', 'chi', 'ghi chu', 'nguoi'];
+function findHeaderRow(rows) {
+  let best = 0, bestScore = 0;
+  for (let i = 0; i < Math.min(rows.length, 20); i++) {
+    const cells = (rows[i] || []).map(c => noAccent(String(c)).toLowerCase().trim());
+    const score = HDR_HINTS.filter(h => cells.some(c => c.includes(h))).length
+      + cells.filter(Boolean).length * 0.05;
+    if (score > bestScore) { bestScore = score; best = i; }
+  }
+  return bestScore >= 2 ? best : 0;
+}
+
+/* ---- ĐỌC SỐ TIỀN KIỂU VIỆT ----
+   "1.234.567" là một triệu hai, không phải 1,23. Chấm và phẩy đều có thể là dấu ngăn nghìn
+   tuỳ máy xuất file, nên quy tắc: dấu cuối cùng mà theo sau đúng 3 chữ số thì là ngăn nghìn. */
+function vnNum(v) {
+  if (typeof v === 'number') return v;
+  let s = String(v == null ? '' : v).trim();
+  if (!s) return 0;
+  const neg = /^\(.*\)$/.test(s) || s.startsWith('-');
+  s = s.replace(/[()\-\s₫đd]/gi, '');
+  const last = Math.max(s.lastIndexOf('.'), s.lastIndexOf(','));
+  if (last >= 0 && s.length - last - 1 !== 3) {
+    s = s.slice(0, last).replace(/[.,]/g, '') + '.' + s.slice(last + 1);
+  } else {
+    s = s.replace(/[.,]/g, '');
+  }
+  const n = parseFloat(s.replace(/[^\d.]/g, ''));
+  if (!isFinite(n)) return 0;
+  return neg ? -n : n;
+}
+
+/* ---- ĐỌC NGÀY ----
+   Nhận dd/mm/yyyy, yyyy-mm-dd, có hoặc không kèm giờ. Trả về 'YYYY-MM-DD', không đọc được
+   thì trả rỗng để dòng đó bị loại và báo cho người dùng biết bao nhiêu dòng bị bỏ. */
+function vnDate(v) {
+  const s = String(v == null ? '' : v).trim();
+  if (!s) return '';
+  let m = s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m) return m[1] + '-' + pad2(+m[2]) + '-' + pad2(+m[3]);
+  m = s.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
+  if (m) {
+    let y = +m[3]; if (y < 100) y += 2000;
+    return y + '-' + pad2(+m[2]) + '-' + pad2(+m[1]);
+  }
+  return '';
+}
+
+/* ---- ĐOÁN CỘT ----
+   Chấm điểm theo từ khoá trong tên cột. Đoán sai cũng không sao: người dùng nhìn bảng
+   xem trước rồi sửa lại bằng ô chọn. */
+const guessCol = (heads, keys, avoid) => {
+  let best = -1, bestScore = 0;
+  heads.forEach((h, i) => {
+    const t = noAccent(String(h)).toLowerCase();
+    if (!t) return;
+    if (avoid && avoid.some(a => t.includes(a))) return;
+    let sc = 0;
+    keys.forEach((k, ki) => { if (t.includes(k)) sc = Math.max(sc, keys.length - ki); });
+    if (sc > bestScore) { bestScore = sc; best = i; }
+  });
+  return best;
+};
+function guessMap(heads) {
+  return {
+    date: guessCol(heads, ['ngay', 'thoi gian', 'ngay tao']),
+    cat: guessCol(heads, ['loai thu chi', 'loai phieu', 'nhom', 'loai'], ['gia tri', 'so tien']),
+    amount: guessCol(heads, ['gia tri', 'so tien', 'so luong tien', 'thanh tien', 'tien']),
+    note: guessCol(heads, ['dien giai', 'ghi chu', 'mo ta', 'noi dung']),
+    code: guessCol(heads, ['ma phieu', 'ma chung tu', 'ma']),
+    /* "Loại thu chi" của KiotViet là tên HẠNG MỤC (Chi phí Điện, Tiền khách trả…), không phải
+       cột chỉ chiều thu/chi — mà chữ "thu chi" lại nằm ngay trong tên. Đoán xong phải loại bỏ
+       trường hợp nó trùng với cột hạng mục, nếu không thì mọi phiếu đều bị đọc thành "thu". */
+    dir: guessCol(heads, ['thu chi', 'loai giao dich', 'chieu']),
+    thu: guessCol(heads, ['thu'], ['loai', 'chi']),
+    chi: guessCol(heads, ['chi'], ['loai', 'thu', 'ghi chu']),
+  };
+}
+function guessMapSafe(heads) {
+  const g = guessMap(heads);
+  if (g.dir >= 0 && g.dir === g.cat) g.dir = -1;
+  if (g.thu >= 0 && (g.thu === g.cat || g.thu === g.amount)) g.thu = -1;
+  if (g.chi >= 0 && (g.chi === g.cat || g.chi === g.amount)) g.chi = -1;
+  return g;
+}
+const guessMode = (g) =>
+  (g.thu >= 0 && g.chi >= 0 && g.amount < 0) ? 'twocol'
+    : g.dir >= 0 ? 'dir'
+      : g.code >= 0 ? 'code'
+        : 'sign';
+
+/* ---- DỰNG PHIẾU TỪ DÒNG FILE ---- */
+function buildRows(rows, hdrIdx, map, mode) {
+  const out = [], bad = [];
+  for (let i = hdrIdx + 1; i < rows.length; i++) {
+    const r = rows[i] || [];
+    const pick = (k) => (map[k] >= 0 ? r[map[k]] : '');
+    const date = vnDate(pick('date'));
+    if (!date) { if ((r.join('') || '').trim()) bad.push(i + 1); continue; }
+    let amount = 0, type = 'chi';
+    if (mode === 'twocol') {
+      const t = vnNum(pick('thu')), c = vnNum(pick('chi'));
+      if (t) { amount = Math.abs(t); type = 'thu'; }
+      else if (c) { amount = Math.abs(c); type = 'chi'; }
+      else continue;
+    } else {
+      const raw = vnNum(pick('amount'));
+      amount = Math.abs(raw);
+      if (!amount) continue;
+      if (mode === 'sign') type = raw >= 0 ? 'thu' : 'chi';
+      else if (mode === 'code') type = /^(tthu|pt|pthu)/i.test(noAccent(String(pick('code')))) ? 'thu' : 'chi';
+      else {
+        const d = noAccent(String(pick('dir'))).toLowerCase();
+        type = d.includes('thu') && !d.includes('chi') ? 'thu' : 'chi';
+      }
+    }
+    const cat = String(pick('cat') || '').trim() || (type === 'thu' ? 'Doanh thu phòng' : 'Chi phí khác');
+    out.push({
+      id: 'kv_' + date + '_' + i,
+      date, type, amount, cat,
+      note: String(pick('note') || cat).trim(),
+      code: String(pick('code') || '').trim(),
+    });
+  }
+  return { rows: out, bad };
+}
+
+/* ===================== HỘP THOẠI NẠP FILE ===================== */
+function ImportModal({ onClose }) {
+  const { db, importCash, saveCfg, toast } = useApp();
+  const saved = (db.cfg || {}).colmap || null;
+  const [file, setFile] = useState(null);
+  const [raw, setRaw] = useState(null);
+  const [hdrIdx, setHdrIdx] = useState(0);
+  const [map, setMap] = useState({});
+  const [mode, setMode] = useState('dir');
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [drag, setDrag] = useState(false);
+
+  const take = async (f) => {
+    if (!f) return;
+    setErr(''); setFile(f); setRaw(null);
+    try {
+      const rows = await readSheet(f);
+      if (!rows.length) throw new Error('File không có dòng nào');
+      const h = findHeaderRow(rows);
+      const heads = (rows[h] || []).map(x => String(x));
+      const remembered = saved && saved.heads === heads.join('|');
+      const g = remembered ? saved.map : guessMapSafe(heads);
+      const md = remembered ? saved.mode : guessMode(g);
+      setRaw(rows); setHdrIdx(h); setMap(g); setMode(md);
+    } catch (e) { setErr(e.message || String(e)); }
+  };
+
+  const heads = raw ? (raw[hdrIdx] || []).map(x => String(x)) : [];
+  const built = useMemo(() => (raw ? buildRows(raw, hdrIdx, map, mode) : { rows: [], bad: [] }), [raw, hdrIdx, map, mode]);
+  /* ---- ĐANG CÓ GÌ, SẮP THÀNH GÌ ----
+     Nạp là ĐÈ nguyên tháng, nên thứ nguy hiểm nhất là xuất nhầm khoảng thời gian: file chỉ có
+     nửa tháng mà đè lên tháng đã đủ, số tụt một nửa và không ai thấy ngay. Bày thẳng số cũ cạnh
+     số mới cho từng tháng — lệch bất thường thì nhìn phát biết, khỏi cần cảnh báo chung chung. */
+  const months = useMemo(() => {
+    const s = {};
+    built.rows.forEach(r => {
+      const k = r.date.slice(0, 7);
+      if (!s[k]) s[k] = { mk: k, n: 0, thu: 0, chi: 0 };
+      s[k].n++; s[k][r.type] += r.amount;
+    });
+    return Object.keys(s).sort().map(k => {
+      const cur = rowsOfMonth(db, k);
+      return {
+        ...s[k],
+        oldN: cur.length,
+        oldThu: cur.filter(x => x.type === 'thu').reduce((a, b) => a + b.amount, 0),
+        oldChi: cur.filter(x => x.type === 'chi').reduce((a, b) => a + b.amount, 0),
+      };
+    });
+  }, [built, db.cash]);
+  /* Tháng đã có số mà file mới ít hơn một nửa -> gần như chắc chắn xuất thiếu ngày */
+  const risky = months.filter(m => m.oldN > 0 && m.n < m.oldN * 0.5);
+  const sum = (t) => built.rows.filter(r => r.type === t).reduce((a, b) => a + b.amount, 0);
+  const ok = built.rows.length > 0 && map.date >= 0;
+
+  const Sel = ({ k, label, hint }) => (
+    <div className="fld" style={{ marginBottom: 9 }}>
+      <label>{label}</label>
+      <select className="inp" value={map[k] == null ? -1 : map[k]}
+        onChange={e => setMap(m => ({ ...m, [k]: +e.target.value }))}>
+        <option value={-1}>— không có —</option>
+        {heads.map((h, i) => <option key={i} value={i}>{h || '(cột ' + (i + 1) + ')'}</option>)}
+      </select>
+      {hint && <div className="hint" style={{ marginTop: 3 }}>{hint}</div>}
+    </div>
+  );
+
+  const doImport = async () => {
+    /* Tháng nào tụt quá nửa số phiếu thì bắt xác nhận thêm một lần — đây gần như luôn là
+       chọn nhầm khoảng thời gian lúc xuất file, và hậu quả (số tháng đó tụt) rất khó phát hiện sau. */
+    if (risky.length && !window.confirm(
+      'CẢNH BÁO: ' + risky.map(m => mLabel(m.mk)).join(', ')
+      + ' đang có nhiều phiếu hơn hẳn so với file này.\n\nCó thể lúc xuất bị chọn thiếu ngày. '
+      + 'Nạp vào là số của tháng đó tụt theo.\n\nVẫn nạp?')) return;
+    setBusy(true);
+    try {
+      await importCash(built.rows, months.map(m => m.mk));
+      saveCfg({ colmap: { heads: heads.join('|'), map, mode } });
+      toast('Đã nạp ' + built.rows.length + ' phiếu của ' + months.length + ' tháng');
+      onClose();
+    } catch (e) { setErr(e.message || String(e)); setBusy(false); }
+  };
+
+  return (
+    <Modal wide title="Nạp sổ quỹ từ file KiotViet"
+      sub="Xuất Excel từ màn hình Sổ quỹ rồi thả vào đây"
+      onClose={onClose}
+      foot={<>
+        <button className="btn" onClick={onClose}>Huỷ</button>
+        <button className="btn pri" disabled={!ok || busy} onClick={doImport}>
+          {busy ? 'Đang nạp…' : 'Nạp ' + built.rows.length + ' phiếu'}
+        </button>
+      </>}>
+      {err && <div className="err">{err}</div>}
+
+      {!raw && (
+        <label
+          onDragOver={e => { e.preventDefault(); setDrag(true); }}
+          onDragLeave={() => setDrag(false)}
+          onDrop={e => { e.preventDefault(); setDrag(false); take(e.dataTransfer.files[0]); }}
+          style={{
+            display: 'block', padding: '46px 20px', textAlign: 'center', borderRadius: 16, cursor: 'pointer',
+            background: drag ? 'var(--brand-wash)' : 'var(--canvas)',
+            outline: '2px dashed ' + (drag ? 'var(--brand)' : 'var(--line)'), outlineOffset: -6,
+          }}>
+          <input type="file" accept=".xlsx,.xls,.csv" style={{ display: 'none' }}
+            onChange={e => take(e.target.files[0])} />
+          <div style={{ fontSize: 32, marginBottom: 8 }}>📄</div>
+          <b style={{ fontSize: 14.5 }}>Kéo file vào đây, hoặc bấm để chọn</b>
+          <div className="hint" style={{ marginTop: 6 }}>Nhận .xlsx, .xls, .csv</div>
+        </label>
+      )}
+
+      {raw && (
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+            <b style={{ fontSize: 13.5, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              📄 {file.name}
+            </b>
+            <button className="btn sm" onClick={() => { setRaw(null); setFile(null); }}>Chọn file khác</button>
+          </div>
+
+          <div className="eyebrow" style={{ marginBottom: 8 }}>Ghép cột</div>
+          <div className="grid2">
+            <Sel k="date" label="Ngày *" />
+            <Sel k="cat" label="Loại thu chi *" hint="Đây là tên hạng mục hiện trong báo cáo" />
+          </div>
+          <div className="fld" style={{ marginBottom: 9 }}>
+            <label>Biết đâu là thu, đâu là chi?</label>
+            <select className="inp" value={mode} onChange={e => setMode(e.target.value)}>
+              <option value="dir">Có một cột ghi rõ Thu / Chi</option>
+              <option value="twocol">Có hai cột riêng: cột Thu và cột Chi</option>
+              <option value="sign">Theo dấu số tiền — số âm là chi</option>
+              <option value="code">Theo mã phiếu — bắt đầu bằng TTHU/PT là thu</option>
+            </select>
+          </div>
+          <div className="grid2">
+            {mode === 'twocol' ? <><Sel k="thu" label="Cột Thu" /><Sel k="chi" label="Cột Chi" /></>
+              : <><Sel k="amount" label="Số tiền *" />{mode === 'dir' ? <Sel k="dir" label="Cột Thu/Chi" /> : <Sel k="code" label="Mã phiếu" />}</>}
+          </div>
+          <div className="grid2">
+            <Sel k="note" label="Diễn giải" />
+            {mode !== 'code' && <Sel k="code" label="Mã phiếu" />}
+          </div>
+
+          <div className="eyebrow" style={{ margin: '18px 0 8px' }}>Xem trước</div>
+          {!built.rows.length
+            ? <div className="banner"><Ic.warn size={16} /><div>
+              Chưa đọc được dòng nào. Kiểm tra lại cột <b>Ngày</b> — có thể dòng tiêu đề bị nhận nhầm.
+            </div></div>
+            : (
+              <>
+                <div className="stats" style={{ gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 12 }}>
+                  <Stat label="Tổng thu" value={money(sum('thu'))} icon={<span>💰</span>} />
+                  <Stat label="Tổng chi" value={money(sum('chi'))} icon={<span>💸</span>} tone="red" />
+                  <Stat label="Số phiếu" value={built.rows.length} icon={<span>📋</span>}
+                    sub={months.map(m => mLabel(m.mk).replace('Tháng ', 'T')).join(', ')} />
+                </div>
+                {!!built.bad.length && (
+                  <div className="banner"><Ic.warn size={16} /><div>
+                    <b>{built.bad.length} dòng bị bỏ qua</b> vì không đọc được ngày (dòng {built.bad.slice(0, 6).join(', ')}
+                    {built.bad.length > 6 ? '…' : ''}). Thường là dòng tổng cộng ở cuối file — bỏ là đúng.
+                  </div></div>
+                )}
+                <div className="scroll-x" style={{ maxHeight: 240, overflowY: 'auto' }}>
+                  <table className="tb">
+                    <thead><tr><th>Ngày</th><th>Loại</th><th>Diễn giải</th><th className="r">Thu</th><th className="r">Chi</th></tr></thead>
+                    <tbody>
+                      {built.rows.slice(0, 40).map((r, i) => (
+                        <tr key={i}>
+                          <td className="mono">{dFull(r.date)}</td>
+                          <td>{r.cat}</td>
+                          <td style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.note}</td>
+                          <td className="r mono" style={{ color: 'var(--green)' }}>{r.type === 'thu' ? money(r.amount) : ''}</td>
+                          <td className="r mono" style={{ color: 'var(--red)' }}>{r.type === 'chi' ? money(r.amount) : ''}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {built.rows.length > 40 && <div className="hint" style={{ marginTop: 6 }}>…và {built.rows.length - 40} dòng nữa.</div>}
+                <div className="eyebrow" style={{ margin: '18px 0 8px' }}>Những tháng sẽ bị thay</div>
+                <table className="tb">
+                  <thead><tr><th>Tháng</th><th className="r">Phiếu</th><th className="r">Tổng thu</th><th className="r">Tổng chi</th></tr></thead>
+                  <tbody>
+                    {months.map(m => {
+                      const warn = m.oldN > 0 && m.n < m.oldN * 0.5;
+                      return (
+                        <tr key={m.mk} style={warn ? { background: 'var(--red-wash)' } : null}>
+                          <td><b>{mLabel(m.mk)}</b>{warn && <div className="hint" style={{ color: 'var(--red)', fontWeight: 700 }}>ít hơn một nửa số phiếu đang có</div>}</td>
+                          <td className="r mono">{m.oldN ? <span style={{ color: 'var(--txt-3)' }}>{m.oldN} → </span> : null}<b>{m.n}</b></td>
+                          <td className="r mono">{m.oldN ? <span style={{ color: 'var(--txt-3)' }}>{short(m.oldThu)} → </span> : null}<b>{money(m.thu)}</b></td>
+                          <td className="r mono">{m.oldN ? <span style={{ color: 'var(--txt-3)' }}>{short(m.oldChi)} → </span> : null}<b>{money(m.chi)}</b></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                {risky.length > 0 ? (
+                  <div className="banner" style={{ marginTop: 14, background: 'var(--red-wash)', borderColor: '#EED9D7', color: '#8A2F29' }}>
+                    <Ic.warn size={16} />
+                    <div>
+                      <b>Khoan đã.</b> {risky.map(m => mLabel(m.mk).toLowerCase()).join(', ')} đang có nhiều phiếu hơn hẳn
+                      so với file này. Thường là do <b>chọn nhầm khoảng thời gian lúc xuất</b> — mới được nửa tháng.
+                      Nạp vào là số của tháng đó tụt xuống theo. Kiểm lại bên KiotViet trước khi bấm.
+                    </div>
+                  </div>
+                ) : (
+                  <div className="banner" style={{ marginTop: 14, background: 'var(--blue-wash)', borderColor: '#C9DCF2', color: '#1C4D85' }}>
+                    <Ic.warn size={16} />
+                    <div>Nạp xong sẽ <b>thay toàn bộ</b> sổ quỹ của {months.map(m => mLabel(m.mk).toLowerCase()).join(', ')} bằng
+                      nội dung file này. Những tháng khác không đụng tới.</div>
+                  </div>
+                )}
+              </>
+            )}
+        </>
+      )}
+    </Modal>
+  );
+}
+
+/* ===================== TRANG 7 — CẤU HÌNH ===================== */
+function SettingsPage() {
+  const { db, saveCfg, resetDemo, seedCloud, wipeCloud, reload, toast, user } = useApp();
+  const [busy, setBusy] = useState('');
+  const [imp, setImp] = useState(false);
+  /* Liệt kê theo dữ liệu THẬT đang có, không theo mốc cố định — sổ quỹ nạp tới đâu hiện tới đó */
+  const months = useMemo(() => {
+    const s = new Set((db.cash || []).map(c => String(c.date).slice(0, 7)));
+    Object.keys(db.timesheet || {}).forEach(k => s.add(k));
+    return Array.from(s).sort();
+  }, [db.cash, db.timesheet]);
+
+  return (
+    <div>
+      {DEMO ? (
+        <div className="banner">
+          <Ic.warn size={16} />
+          <div>
+            <b>Đang chạy chế độ DEMO.</b> Không đụng tới máy chủ — toàn bộ số liệu là dữ liệu mẫu lưu
+            trong trình duyệt này. Sửa thoải mái, không ảnh hưởng tới ai. Bỏ <b>?demo</b> khỏi địa chỉ
+            là quay lại dữ liệu thật.
+          </div>
+        </div>
+      ) : (
+        <div className="banner" style={{ background: 'var(--green-wash)', borderColor: '#BFE3D0', color: '#0B5E3E' }}>
+          <Ic.check size={16} />
+          <div>
+            <b>Đang chạy trên máy chủ thật.</b> Project <b>{FB_CFG.projectId}</b> · đăng nhập bằng
+            <b> {user && user.email}</b> · vai trò <b>{ROLE_LABEL[user && user.role]}</b>.
+          </div>
+        </div>
+      )}
+
+      <div className="card">
+        <div className="card-h">
+          <div><h3>Nạp sổ quỹ hằng tháng</h3><p>Xuất Excel từ KiotViet rồi thả vào đây — mỗi tháng một lần</p></div>
+          <div className="sp"><button className="btn pri" onClick={() => setImp(true)}><Ic.down size={15} /> Nạp file sổ quỹ</button></div>
+        </div>
+        <div className="card-b">
+          <ol style={{ margin: 0, paddingLeft: 20, fontSize: 13.5, lineHeight: 1.9, color: 'var(--txt-2)' }}>
+            <li>Mở KiotViet → <b>Sổ quỹ</b>, chọn khoảng thời gian là tháng cần nạp</li>
+            <li>Bấm <b>Xuất file</b> → lưu về máy</li>
+            <li>Quay lại đây, bấm <b>Nạp file sổ quỹ</b> và thả file vào</li>
+          </ol>
+          <div className="hint" style={{ marginTop: 12 }}>
+            Gói KiotViet Hotel đang dùng không mở API nên không tự đồng bộ được — bù lại cách này
+            không cần khoá, không cần mật khẩu, và không gãy khi KiotViet đổi giao diện.
+            Lần đầu app hỏi cột nào là ngày, cột nào là số tiền; ghép một lần rồi nhớ luôn.
+            Nạp lại cùng một tháng thì <b>đè lên</b>, không nhân đôi số liệu.
+          </div>
+          {(db.cfg || {}).colmap && (
+            <div className="hint" style={{ marginTop: 8, color: 'var(--green)', fontWeight: 600 }}>
+              ✓ Đã nhớ cách ghép cột của lần nạp trước — lần sau thả file vào là chạy thẳng.
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-h"><div><h3>Dữ liệu đang có</h3><p>{months.length} tháng · {(db.cash || []).length} phiếu thu chi · {(db.employees || []).length} nhân viên</p></div></div>
+        <div className="scroll-x">
+          <table className="tb">
+            <thead><tr><th>Tháng</th><th className="r">Phiếu</th><th className="r">Tổng thu</th><th className="r">Tổng chi</th><th className="r">Lương</th><th>Trạng thái</th></tr></thead>
+            <tbody>
+              {months.slice().reverse().slice(0, 14).map(k => {
+                const s = monthStats(db, k);
+                return (
+                  <tr key={k}>
+                    <td><b>{mLabel(k)}</b></td>
+                    <td className="r mono">{rowsOfMonth(db, k).length}</td>
+                    <td className="r mono">{s.thu ? short(s.thu) : '—'}</td>
+                    <td className="r mono">{s.chi ? short(s.chi) : '—'}</td>
+                    <td className="r mono">{s.salary ? short(s.salary) : '—'}</td>
+                    <td>{s.empty ? <span className="tag t-gray">trống</span>
+                      : s.closed ? <span className="tag t-green"><Ic.lock size={11} /> đã chốt</span>
+                        : <span className="tag t-amber">tạm tính</span>}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-h"><div><h3>Loại chi phí</h3><p>Lấy nguyên tên từ KiotViet — bảng dưới chỉ gán emoji, màu và nhóm cho dễ nhìn</p></div></div>
+        <div className="scroll-x">
+          <table className="tb">
+            <thead><tr><th style={{ width: 50 }}></th><th>Tên loại trong KiotViet</th><th>Nhóm</th><th className="r">Tổng cả năm nay</th></tr></thead>
+            <tbody>
+              {yearCats(db, new Date().getFullYear()).map(c => (
+                <tr key={c.cat}>
+                  <td style={{ fontSize: 18, textAlign: 'center' }}>{c.e}</td>
+                  <td><b>{c.cat}</b></td>
+                  <td><span className="tag" style={{ background: c.c + '1a', color: c.c }}>{c.g}</span></td>
+                  <td className="r mono">{money(c.total)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="card-b" style={{ paddingTop: 10, borderTop: '1px solid var(--line-soft)' }}>
+          <div className="hint">Thêm loại chi mới bên KiotViet thì báo cáo tự hiện thêm dòng, không cần sửa gì ở đây.
+            Loại chưa khai emoji sẽ dùng 💼 mặc định.</div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-h"><div><h3>Công cụ dữ liệu</h3><p>{DEMO ? 'Chế độ demo — mọi thứ nằm trong trình duyệt này' : 'Tác động thẳng lên Firestore của ' + FB_CFG.projectId}</p></div></div>
+        <div className="card-b" style={{ display: 'flex', gap: 9, flexWrap: 'wrap' }}>
+          {DEMO ? (
+            <button className="btn danger" onClick={() => {
+              if (!window.confirm('Xoá hết chỉnh sửa và dựng lại dữ liệu mẫu ban đầu?')) return;
+              resetDemo(); toast('Đã dựng lại dữ liệu mẫu');
+            }}><Ic.trash size={14} /> Dựng lại dữ liệu mẫu</button>
+          ) : (
+            <>
+              <button className="btn" disabled={!!busy} onClick={async () => {
+                setBusy('reload'); try { await reload(); } finally { setBusy(''); }
+              }}><Ic.sync size={15} /> {busy === 'reload' ? 'Đang tải…' : 'Tải lại từ máy chủ'}</button>
+              <button className="btn" disabled={!!busy} onClick={async () => {
+                if (!window.confirm('Đẩy bộ SỐ LIỆU MẪU lên Firestore?\n\nDùng để xem thử app chạy thật. Đè lên dữ liệu đang có của những tháng trùng.')) return;
+                setBusy('seed');
+                try { const n = await seedCloud((i, t) => setBusy('seed ' + i + '/' + t)); toast('Đã đẩy ' + n + ' tháng dữ liệu mẫu lên máy chủ'); }
+                catch (e) { toast('Lỗi: ' + e.message); } finally { setBusy(''); }
+              }}><Ic.down size={15} /> {busy.startsWith('seed') ? busy.replace('seed', 'Đang đẩy') : 'Đẩy dữ liệu mẫu lên'}</button>
+              <button className="btn danger" disabled={!!busy} onClick={async () => {
+                if (!window.confirm('XOÁ SẠCH sổ quỹ, bảng công, bảng lương và nhân viên trên Firestore?\n\nKhông khôi phục được.')) return;
+                if (!window.confirm('Chắc chưa? Bấm OK là xoá thật.')) return;
+                setBusy('wipe');
+                try { await wipeCloud(); toast('Đã xoá sạch'); }
+                catch (e) { toast('Lỗi: ' + e.message); } finally { setBusy(''); }
+              }}><Ic.trash size={14} /> {busy === 'wipe' ? 'Đang xoá…' : 'Xoá sạch dữ liệu'}</button>
+            </>
+          )}
+        </div>
+        {!DEMO && (
+          <div className="card-b" style={{ paddingTop: 0 }}>
+            <div className="hint">
+              Muốn xem giao diện bằng dữ liệu giả mà không đụng máy chủ thì thêm <b>?demo</b> vào cuối địa chỉ.
+            </div>
+          </div>
+        )}
+      </div>
+      {imp && <ImportModal onClose={() => setImp(false)} />}
+    </div>
+  );
+}
+
+/* ===================== KHUNG ỨNG DỤNG ===================== */
+const PAGES = [
+  { k: 'report', l: 'Báo cáo tổng hợp', s: 'Báo cáo', ic: Ic.gauge, g: 'Báo cáo', t: ['Báo cáo tổng hợp', 'Lãi lỗ theo tháng từ sổ quỹ KiotViet'], C: ReportPage },
+  { k: 'expense', l: 'Chi tiết chi phí', s: 'Chi phí', ic: Ic.pie, g: 'Báo cáo', t: ['Chi tiết chi phí', 'Tiền chảy đi đâu, khoản nào bất thường'], C: ExpensePage },
+  { k: 'pnl', l: 'P&L theo năm', s: 'P&L', ic: Ic.chart, g: 'Báo cáo', t: ['Báo cáo P&L', 'Doanh thu, chi phí từng loại và lợi nhuận 12 tháng'], C: PnlPage },
+  { k: 'timesheet', l: 'Chấm công', s: 'Công', ic: Ic.clock, g: 'Nhân sự', t: ['Chấm công', 'Bảng giờ công theo ngày'], C: TimesheetPage },
+  { k: 'payroll', l: 'Bảng lương', s: 'Lương', ic: Ic.wallet, g: 'Nhân sự', t: ['Bảng lương', 'Giờ công × đơn giá, trừ BHXH và tạm ứng, chuyển khoản bằng QR'], C: PayrollPage },
+  { k: 'staff', l: 'Nhân viên', s: 'Nhân sự', ic: Ic.users, g: 'Nhân sự', t: ['Nhân viên', 'Hồ sơ và tài khoản nhận lương'], C: StaffPage },
+  { k: 'settings', l: 'Cấu hình', s: 'Cài đặt', ic: Ic.settings, g: 'Hệ thống', t: ['Cấu hình', 'Kết nối KiotViet và tình trạng dữ liệu'], C: SettingsPage },
+];
+/* Kế toán / quản lý không thấy tiền lương và lợi nhuận — xem lại quyết định này ở trang Cấu hình
+   nếu sau này muốn mở thêm. */
+const ROLE_PAGES = {
+  owner: PAGES.map(p => p.k),
+  /* Trang Nhân viên hiện ĐƠN GIÁ GIỜ nên nó cũng là trang lương — kế toán không vào. */
+  acct: ['expense', 'timesheet'],
+};
+const ROLE_LABEL = { owner: 'Chủ khách sạn', acct: 'Kế toán / Quản lý' };
+
+function Nav({ page, go, user, onOut, min, onToggle }) {
+  const allow = ROLE_PAGES[user.role] || [];
+  const items = PAGES.filter(p => allow.includes(p.k));
+  const groups = items.reduce((a, p) => (a.includes(p.g) ? a : a.concat(p.g)), []);
+  const scrollRef = useRef(null);
+  /* Đo lại cả khi menu thu/mở và khi số mục đổi (vai trò khác nhau thấy số mục khác nhau) */
+  const [hl] = useHlRect(page, scrollRef, [min, items.length]);
+  return (
+    <nav className="nav">
+      <div className="nav-brand">
+        <Logo />
+        <div className="nav-nm"><b>{BRAND.name}</b><small>{BRAND.sub}</small></div>
+        {/* Thu gọn cột menu còn dải icon — trang nào có bảng rộng (P&L, chấm công) thì lấy lại
+            được 164px bề ngang mà vẫn đi lại được giữa các chức năng */}
+        <button className="nav-min-btn" onClick={onToggle}
+          title={min ? 'Mở rộng thanh menu' : 'Thu gọn thanh menu'}
+          aria-label={min ? 'Mở rộng thanh menu' : 'Thu gọn thanh menu'}>
+          <Ic.panel size={17} />
+        </button>
+      </div>
+      <div className="nav-scroll" ref={scrollRef}>
+        {hl && <i className="nav-hl" style={{ top: hl.top, height: hl.height }} />}
+        {groups.map(g => (
+          <div key={g}>
+            <div className="nav-group">{g}</div>
+            {items.filter(p => p.g === g).map(p => (
+              <button key={p.k} data-hlk={p.k} aria-label={p.l}
+                className={cls('nav-item', page === p.k && 'on')} onClick={() => go(p.k)}>
+                <p.ic /> <span className="nav-lb">{p.l}</span>
+              </button>
+            ))}
+          </div>
+        ))}
+      </div>
+      <div className="nav-foot">
+        <div className="nav-user" title={user.name + ' — ' + ROLE_LABEL[user.role]}>
+          <div className="av">{initials(user.name)}</div>
+          <div className="who" style={{ minWidth: 0 }}><b>{user.name}</b><small>{ROLE_LABEL[user.role]}</small></div>
+        </div>
+        <button className="nav-out" onClick={onOut} title="Đăng xuất">Đăng xuất</button>
+      </div>
+    </nav>
+  );
+}
+
+function Login({ onDemo }) {
+  const [em, setEm] = useState('');
+  const [pw, setPw] = useState('');
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+  const submit = async (e) => {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true); setErr('');
+    try {
+      await AUTH.signInWithEmailAndPassword(em.trim(), pw);
+      /* Không cần làm gì thêm: onAuthStateChanged bên App bắt được và tự nạp dữ liệu */
+    } catch (ex) { setErr(authMsg(ex)); setBusy(false); }
+  };
+  return (
+    <div className="login">
+      <div className="login-card">
+        <Logo />
+        <h2>{BRAND.name}</h2>
+        <p>Quản trị khách sạn — báo cáo, chấm công và bảng lương</p>
+        {err && <div className="err">{err}</div>}
+        {DEMO ? (
+          <>
+            <div className="banner" style={{ marginBottom: 16 }}>
+              <Ic.warn size={16} />
+              <div><b>Bản demo.</b> Dữ liệu mẫu nằm trong trình duyệt này, không đụng tới máy chủ.</div>
+            </div>
+            <button className="btn pri" style={{ width: '100%', justifyContent: 'center', padding: 12, marginBottom: 9 }}
+              onClick={() => onDemo({ name: 'Chủ khách sạn', role: 'owner' })}>Vào với quyền Chủ — thấy hết</button>
+            <button className="btn" style={{ width: '100%', justifyContent: 'center', padding: 12 }}
+              onClick={() => onDemo({ name: 'Kế toán', role: 'acct' })}>Vào với quyền Kế toán — không thấy lương &amp; lợi nhuận</button>
+          </>
+        ) : (
+          <form onSubmit={submit}>
+            <div className="fld"><label>Email</label>
+              <input className="inp" type="email" value={em} autoComplete="username"
+                onChange={e => setEm(e.target.value)} autoFocus required /></div>
+            <div className="fld"><label>Mật khẩu</label>
+              <input className="inp" type="password" value={pw} autoComplete="current-password"
+                onChange={e => setPw(e.target.value)} required /></div>
+            <button className="btn pri" disabled={busy}
+              style={{ width: '100%', justifyContent: 'center', padding: 12, marginTop: 6 }}>
+              {busy ? 'Đang kiểm tra…' : 'Đăng nhập'}
+            </button>
+            <div className="hint" style={{ marginTop: 14, textAlign: 'center' }}>
+              Quên mật khẩu hoặc cần thêm người dùng thì nhờ quản trị cấp trong Firebase Console.
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* Màn hình chờ / báo lỗi dùng chung cho lúc khởi động */
+function Splash({ title, sub, action }) {
+  return (
+    <div className="login">
+      <div className="login-card" style={{ textAlign: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}><Logo /></div>
+        <h2>{title}</h2>
+        <p style={{ marginBottom: action ? 18 : 0 }}>{sub}</p>
+        {action}
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  /* 'boot' = đang nối máy chủ · 'login' = chờ đăng nhập · 'denied' = đăng nhập được nhưng chưa
+     được cấp quyền vào app · 'ready' = xong · 'fail' = không nối được Firebase */
+  const [phase, setPhase] = useState(DEMO ? 'login' : 'boot');
+  const [fatal, setFatal] = useState('');
+  const [user, setUser] = useState(null);
+  const [db, setDb] = useState(DEMO ? loadDb : EMPTY_DB);
+  /* `page` là trang vừa bấm (menu đổi ngay), `shown` là trang đang vẽ: đợi trang cũ mờ xong mới đổi */
+  const [page, setPage] = useState('report');
+  const [shown, setShown] = useState('report');
+  const [leaving, setLeaving] = useState(false);
+  /* Mở app là menu THU GỌN. Rê chuột vào icon là mục đó dãn ra hiện tên; muốn menu đầy đủ thì bấm nút. */
+  const [navMin, setNavMin] = useState(true);
+  const [msg, setMsg] = useState('');
+  const tRef = useRef(null);
+
+  const toast = useCallback((m) => {
+    setMsg(m);
+    clearTimeout(tRef.current);
+    tRef.current = setTimeout(() => setMsg(''), 2800);
+  }, []);
+
+  /* ---- KHỞI ĐỘNG ----
+     Nối Firebase, nghe trạng thái đăng nhập. Đăng nhập rồi thì tra hồ sơ trong ch_users để biết
+     vai trò — KHÔNG lấy vai trò từ phía máy này, vì cái gì máy này tự quyết thì máy này tự sửa
+     được. Không có hồ sơ nghĩa là tài khoản chưa được cấp quyền vào app. */
+  useEffect(() => {
+    if (DEMO) return;
+    try { bootCloud(); }
+    catch (e) { setFatal(e.message); setPhase('fail'); return; }
+    return AUTH.onAuthStateChanged(async (u) => {
+      if (!u) { setUser(null); setDb(EMPTY_DB); setPhase('login'); return; }
+      setPhase('boot');
+      try {
+        const prof = await FS.collection(COL.usr).doc(u.uid).get();
+        if (!prof.exists) { setPhase('denied'); return; }
+        const p = prof.data() || {};
+        setUser({ uid: u.uid, email: u.email, name: p.name || u.email, role: p.role || 'acct' });
+        setDb(await cloudLoad());
+        setPhase('ready');
+      } catch (e) {
+        setFatal(e.message || String(e));
+        setPhase('fail');
+      }
+    });
+  }, []);
+
+  /* Mọi thay đổi đi qua đây: cập nhật màn hình rồi ghi xuống ngay, không có bước "bấm Lưu".
+     `after` lo phần đẩy lên Firestore đúng document vừa đụng tới. */
+  const commit = useCallback((fn, after) => setDb(prev => {
+    const next = fn(prev);
+    if (DEMO) saveDb(next); else if (after) after(next);
+    return next;
+  }), []);
+
+  const api = useMemo(() => ({
+    db, toast, user,
+    reload: async () => { if (!DEMO) { setDb(await cloudLoad()); toast('Đã tải lại số liệu từ máy chủ'); } },
+    setCell: (mk, empId, day, raw) => commit(d => {
+      const v = String(raw).replace(',', '.').replace(/[^\d.]/g, '');
+      const ts = { ...(d.timesheet || {}) };
+      const mo = { ...(ts[mk] || {}) };
+      const row = { ...(mo[empId] || {}) };
+      if (v === '' || Number(v) === 0) delete row[day]; else row[day] = Math.min(24, Number(v));
+      mo[empId] = row; ts[mk] = mo;
+      return { ...d, timesheet: ts };
+    }, (next) => pushTsMonth(next, mk)),
+    setPay: (mk, empId, patch) => commit(d => {
+      const pr = { ...(d.payroll || {}) };
+      const mo = { ...(pr[mk] || {}) };
+      const row = { ...(mo[empId] || {}), ...patch };
+      /* advance = null nghĩa là "thôi, lấy lại số app tự tìm trong sổ quỹ" */
+      if (patch.advance === null) delete row.advance;
+      mo[empId] = row; pr[mk] = mo;
+      return { ...d, payroll: pr };
+    }, (next) => pushPayMonth(next, mk)),
+    saveEmp: (e) => commit(d => {
+      const list = (d.employees || []).slice();
+      const i = list.findIndex(x => x.id === e.id);
+      if (i >= 0) list[i] = e; else list.push(e);
+      list.sort((a, b) => noAccent(a.name || '').localeCompare(noAccent(b.name || ''), 'vi'));
+      return { ...d, employees: list };
+    }, () => pushEmp(e)),
+    delEmp: (id) => commit(d => ({ ...d, employees: (d.employees || []).filter(x => x.id !== id) }),
+      () => dropEmp(id)),
+    closeMonth: (mk, amount, ids) => commit(
+      d => ({ ...d, closes: { ...(d.closes || {}), [mk]: { amount: n0(amount), ids: ids || [], at: todayKey() } } }),
+      (next) => pushPayMonth(next, mk)),
+    openMonth: (mk) => commit(d => { const c = { ...(d.closes || {}) }; delete c[mk]; return { ...d, closes: c }; },
+      (next) => pushPayMonth(next, mk)),
+    saveCfg: (patch) => commit(d => ({ ...d, cfg: { ...(d.cfg || {}), ...patch } }), (next) => pushCfg(next)),
+    /* Nạp sổ quỹ: THAY nguyên sổ của những tháng có trong file, không cộng dồn.
+       Nạp lại cùng một tháng là chuyện bình thường (xuất bù, sửa phiếu) — cộng dồn thì
+       tháng đó tự nhân đôi doanh thu mà không ai nhìn ra ngay. */
+    importCash: async (rows, months) => {
+      const set = new Set(months);
+      commit(d => ({ ...d, cash: (d.cash || []).filter(x => !set.has(String(x.date).slice(0, 7))).concat(rows) }),
+        (next) => months.forEach(mk => pushCashMonth(next, mk)));
+      if (!DEMO) flushWrites();
+    },
+    resetDemo: () => { const fresh = seedDb(); saveDb(fresh); setDb(fresh); },
+    seedCloud: async (onStep) => { await seedToCloud(onStep); setDb(await cloudLoad()); },
+    wipeCloud: async () => { await wipeCloud(); setDb(await cloudLoad()); },
+  }), [db, commit, toast, user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const allow = ROLE_PAGES[user.role] || [];
+    if (!allow.includes(page)) setPage(allow[0] || 'report');
+  }, [user, page]);
+
+  /* Nhịp đổi trang: trang cũ mờ đi 0,22s rồi mới tháo ra và lắp trang mới vào */
+  useEffect(() => {
+    if (page === shown) { setLeaving(false); return; }
+    setLeaving(true);
+    const t = setTimeout(() => { setShown(page); setLeaving(false); }, 220);
+    return () => clearTimeout(t);
+  }, [page, shown]);
+
+  /* Cho các con số chạy từ 0 lên, ngay sau khi trang mới vừa được lắp vào */
+  useEffect(() => {
+    const t = setTimeout(() => countUp(document.querySelector('.page')), 60);
+    return () => clearTimeout(t);
+  }, [shown, phase]);
+
+  const signOut = () => {
+    if (DEMO) { setUser(null); setPhase('login'); return; }
+    flushWrites();
+    AUTH.signOut();
+  };
+
+  if (phase === 'fail') return <Splash title="Không nối được máy chủ" sub={fatal}
+    action={<button className="btn pri" onClick={() => location.reload()}>Thử lại</button>} />;
+  if (phase === 'boot') return <Splash title={BRAND.name} sub="Đang tải số liệu…" />;
+  if (phase === 'denied') return <Splash title="Tài khoản chưa được cấp quyền"
+    sub={'Đăng nhập thành công nhưng tài khoản này chưa có hồ sơ trong ' + COL.usr + '. Nhờ quản trị thêm vào rồi đăng nhập lại.'}
+    action={<button className="btn" onClick={signOut}>Đăng xuất</button>} />;
+  if (!user) return <Login onDemo={(u) => { setUser(u); setPhase('ready'); }} />;
+
+  const allow = ROLE_PAGES[user.role] || [];
+  const cur = PAGES.find(p => p.k === shown && allow.includes(p.k)) || PAGES.find(p => allow.includes(p.k));
+  const Body = cur ? cur.C : () => <div className="empty">Vai trò này chưa được mở trang nào.</div>;
+  const today = new Date();
+
+  return (
+    <AppCtx.Provider value={api}>
+      <div className={cls('shell', navMin && 'nav-min')}>
+        <Nav page={page} go={setPage} user={user} min={navMin} onToggle={() => setNavMin(v => !v)} onOut={signOut} />
+        <div className="main">
+          <div className="topbar">
+            <div style={{ minWidth: 0 }}>
+              {/* Tiêu đề cuộn: chữ cũ trượt xuống mờ đi, chữ mới trượt từ trên xuống vào chỗ */}
+              <RollSwap k={shown}>
+                <h1>{cur ? cur.t[0] : BRAND.name}</h1>
+                <div className="sub">{cur ? cur.t[1] : ''}</div>
+              </RollSwap>
+            </div>
+            <div className="top-right">
+              {DEMO && <span className="tag t-amber">DEMO — dữ liệu mẫu</span>}
+              <span className="top-date">{pad2(today.getDate())}/{pad2(today.getMonth() + 1)}/{today.getFullYear()}</span>
+            </div>
+          </div>
+          {/* key={shown} để React tháo hẳn trang cũ và lắp trang mới — có vậy hiệu ứng mới chạy lại */}
+          <div key={shown} className={cls('page', leaving && 'leaving')}><Body /></div>
+        </div>
+        <div className="mob-bar">
+          {PAGES.filter(p => allow.includes(p.k)).map(p => (
+            <button key={p.k} className={cls(page === p.k && 'on')} onClick={() => setPage(p.k)}>
+              <p.ic size={19} /><span>{p.s}</span>
+            </button>
+          ))}
+        </div>
+        <Toast msg={msg} />
+      </div>
+    </AppCtx.Provider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+const boot = document.getElementById('boot');
+if (boot) boot.remove();
+</script>
+
+<script>
+/* ---------------------------------------------------------------
+   Bộ nạp: dịch JSX bằng Babel ngay trong trình duyệt rồi chạy.
+   File này nhỏ nên dịch xong trong khoảng một phần mười giây —
+   không cần npm, không cần build, sửa file là F5 thấy liền.
+   Dịch hỏng thì in lỗi ra giữa màn hình chứ không để trang trắng.
+--------------------------------------------------------------- */
+(function () {
+  var show = function (title, detail) {
+    var b = document.getElementById('boot');
+    if (!b) { console.error(title, detail); return; }
+    b.innerHTML =
+      '<div style="max-width:720px;padding:24px;font-family:system-ui,sans-serif">'
+      + '<div style="font-size:15px;font-weight:700;color:#C4443C;margin-bottom:8px">' + title + '</div>'
+      + '<pre style="white-space:pre-wrap;font-size:12px;color:#5C6572;line-height:1.6;margin:0">'
+      + String(detail).replace(/[<>&]/g, function (c) { return ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' })[c]; })
+      + '</pre></div>';
+  };
+  if (!window.React || !window.ReactDOM) return show('Không tải được React', 'Máy đang không có mạng, hoặc cdn.jsdelivr.net bị chặn. App cần mạng ở lần tải đầu.');
+  if (!window.Babel) return show('Không tải được Babel', 'Máy đang không có mạng, hoặc cdn.jsdelivr.net bị chặn.');
+  var src = document.getElementById('src').textContent;
+  var code;
+  try {
+    code = Babel.transform(src, { presets: [['react', { runtime: 'classic' }]], sourceType: 'script' }).code;
+  } catch (e) {
+    return show('Lỗi cú pháp trong mã nguồn', e.message);
+  }
+  try {
+    (0, eval)(code);
+  } catch (e) {
+    return show('Lỗi khi chạy app', (e && e.stack) || e);
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,94 @@
+rules_version = '2';
+
+/* =====================================================================
+   CLIFF HOUSE — LUẬT BẢO MẬT FIRESTORE
+   ---------------------------------------------------------------------
+   Nguyên tắc: KHÔNG tin gì từ phía trình duyệt. Vai trò đọc từ hồ sơ
+   ch_users/{uid} nằm trên máy chủ, không lấy từ dữ liệu người dùng gửi lên —
+   cái gì máy người dùng tự khai thì máy đó tự sửa được.
+
+   Hai vai trò:
+     owner : chủ khách sạn — thấy và sửa được hết
+     acct  : kế toán / quản lý — KHÔNG đọc được bảng lương và cấu hình
+             (lương và lợi nhuận là thứ duy nhất phải giấu)
+
+   Cấp tài khoản: tạo người dùng trong Authentication, rồi thêm tay một
+   document ch_users/{uid} = { name: "...", role: "owner" }. Không ai tự
+   cấp quyền cho mình được — ch_users chỉ sửa được từ Console.
+   ===================================================================== */
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+    function profile() {
+      return get(/databases/$(database)/documents/ch_users/$(request.auth.uid)).data;
+    }
+    function hasProfile() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/ch_users/$(request.auth.uid));
+    }
+    function role() {
+      return hasProfile() ? profile().role : 'none';
+    }
+    function isOwner() {
+      return role() == 'owner';
+    }
+    /* Ai có hồ sơ cũng là người trong nhà — dùng cho những thứ cả hai vai trò đều cần */
+    function isStaff() {
+      return role() == 'owner' || role() == 'acct';
+    }
+
+    /* ---- Hồ sơ người dùng ----
+       Đọc được hồ sơ CỦA CHÍNH MÌNH (app cần nó để biết vai trò lúc đăng nhập).
+       Không ai ghi được, kể cả chủ: thêm/sửa người dùng làm thẳng trong Firebase Console.
+       Nếu cho ghi ở đây thì kế toán chỉ cần sửa role của mình thành owner là xem được lương. */
+    match /ch_users/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    /* ---- Sổ quỹ: thu chi ----
+       Cả hai vai trò đều cần — kế toán làm việc trên trang Chi tiết chi phí.
+       Ghi: chỉ chủ. Số liệu thật sẽ do Cloud Function đồng bộ từ KiotViet, mà Cloud
+       Function chạy bằng quyền quản trị nên không bị luật này chặn. */
+    match /ch_cash/{month} {
+      allow read: if isStaff();
+      allow write: if isOwner();
+    }
+
+    /* ---- Bảng công ----
+       Kế toán nhập công hằng tháng nên được ghi. Giờ công không phải tiền.
+       Document này tự mang theo tên nhân viên (field `names`) để kế toán chấm công được
+       mà không cần quyền đọc ch_employees — nơi cất đơn giá giờ. */
+    match /ch_timesheet/{month} {
+      allow read, write: if isStaff();
+    }
+
+    /* ---- Bảng lương ----
+       Đây là chỗ giấu tiền: chỉ chủ. Kế toán không đọc được, kể cả gọi thẳng API. */
+    match /ch_payroll/{month} {
+      allow read, write: if isOwner();
+    }
+
+    /* ---- Hồ sơ nhân viên ----
+       Có ĐƠN GIÁ GIỜ và SỐ TÀI KHOẢN NGÂN HÀNG nên đây cũng là dữ liệu lương -> chỉ chủ.
+       Kế toán vẫn chấm công bình thường nhờ tên lưu sẵn trong ch_timesheet. */
+    match /ch_employees/{id} {
+      allow read, write: if isOwner();
+    }
+
+    /* ---- Cấu hình: chứa khoá KiotViet ---- */
+    match /ch_config/{doc} {
+      allow read, write: if isOwner();
+    }
+
+    /* Mọi thứ khác: cấm. Thêm collection mới thì phải khai thêm ở trên,
+       quên khai là app báo permission-denied ngay chứ không âm thầm mở toang. */
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

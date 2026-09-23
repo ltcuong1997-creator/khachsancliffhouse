@@ -1,0 +1,32 @@
+{
+  "hosting": {
+    "public": "public",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      { "source": "**", "destination": "/index.html" }
+    ],
+    "headers": [
+      {
+        "//": "Toàn bộ app nằm trong index.html, nên nó PHẢI không được cache: deploy xong mà máy khách còn giữ bản cũ thì coi như chưa deploy. Phải khai cả '/' lẫn '/index.html' — Firebase áp header theo ĐƯỜNG DẪN ĐƯỢC GỌI, mà người dùng gõ 'khachsancliffhouse.web.app' là gọi '/', không khớp luật '/index.html' nên rơi về mặc định max-age=3600.",
+        "source": "/",
+        "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }]
+      },
+      {
+        "source": "**/*.html",
+        "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }]
+      },
+      {
+        "//": "Ảnh và icon thì ngược lại: gần như không bao giờ đổi, cho cache một tuần cho nhẹ máy. Khi nào đổi ảnh thì đổi luôn tên file.",
+        "source": "**/*.@(webp|png|jpg|jpeg|svg|ico|woff2)",
+        "headers": [{ "key": "Cache-Control", "value": "public, max-age=604800" }]
+      },
+      {
+        "source": "/manifest.json",
+        "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+      }
+    ]
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  }
+}
