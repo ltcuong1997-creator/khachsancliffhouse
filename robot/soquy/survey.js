@@ -70,6 +70,9 @@ const shape = (v, depth = 0) => {
 /* ---------- Ghi lại mọi request API ---------- */
 const calls = [];
 const steps = [];
+/* Header thật của một request API đã đăng nhập — CHỈ giữ trong bộ nhớ để gọi thử, không bao giờ in ra */
+let liveHeaders = null;
+const NOISE = /google|analytics|sentry|apm\.|trackjs|freshchat|ktarget|feature-management|portal-kma|timesheet|\/dashboard\/|reportapi\/charts|reportapi\/\/charts|einvoice|birthday|banner|third-parties|retailer-config|activities|hotellink|should-show/;
 let shotNo = 0;
 async function shot(page, name) {
   const f = String(++shotNo).padStart(2, '0') + '-' + name + '.png';
@@ -83,6 +86,9 @@ function watch(page) {
     const req = res.request();
     const type = req.resourceType();
     if (type !== 'xhr' && type !== 'fetch') return;
+    if (!liveHeaders && /^https:\/\/hotel\.kiotviet\.vn\/api\//.test(req.url()) && req.headers().authorization) {
+      liveHeaders = { ...req.headers() };
+    }
     const rec = {
       method: req.method(),
       url: scrubUrl(req.url()),
@@ -164,8 +170,6 @@ async function fillBy(page, re, value, label) {
       .map(a => ({ text: a.text, href: hideShop(a.href) }))
       .filter((a, i, arr) => arr.findIndex(b => b.href === a.href) === i)
       .slice(0, 200);
-    console.log('\n===== MENU (' + report.menu.length + ') =====');
-    report.menu.forEach(a => console.log('  ' + a.text.padEnd(32) + ' ' + a.href));
 
     /* 3. Mở Sổ quỹ. Chỉ coi là mở được khi tiêu đề/địa chỉ/nội dung trang thật sự đổi sang Sổ quỹ —
        không đếm request, vì trang Tổng quan cũng bắn rất nhiều request. */
@@ -181,8 +185,8 @@ async function fillBy(page, re, value, label) {
       const a = as.find(x => /^\s*sổ quỹ\s*$/i.test(x.textContent || ''));
       return a ? a.href : null;
     });
+    report.nav = ['Link "Sổ quỹ" trong menu: ' + (cashLink ? hideShop(cashLink) : 'KHÔNG thấy')];
     if (cashLink) {
-      console.log('Thấy link Sổ quỹ → ' + hideShop(cashLink));
       await page.goto(cashLink, { waitUntil: 'networkidle', timeout: 45000 }).catch(() => { });
       await page.waitForTimeout(3000);
       opened = await isCashPage();
@@ -198,12 +202,49 @@ async function fillBy(page, re, value, label) {
     }
     await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => { });
     await page.waitForTimeout(4000);
-    console.log('Trang hiện tại: ' + hideShop(scrubUrl(page.url())) + ' · tiêu đề: ' + (await page.title().catch(() => '')));
+    report.nav.push('Trang cuối: ' + hideShop(scrubUrl(page.url())) + ' · tiêu đề: ' + (await page.title().catch(() => '')));
     await shot(page, 'so-quy');
     report.cashCalls = calls.slice(before).map((c, i) => before + i);
     report.ok = opened;
     if (!opened) report.error = 'Không mở được trang Sổ quỹ — xem MENU trong log để tìm đường dẫn đúng';
 
+    /* 4. Gọi thử vài địa chỉ API sổ quỹ quen của KiotViet — CHỈ GET, dùng lại header của phiên đăng nhập.
+       Chỉ ghi mã trả về + tên trường + 1 dòng mẫu. */
+    report.probes = [];
+    if (liveHeaders) {
+      const h = { ...liveHeaders };
+      ['content-length', 'baggage', 'sentry-trace'].forEach(k => delete h[k]);
+      const filt = encodeURIComponent(JSON.stringify({ StartDate: '2026-09-01T00:00:00+07:00', EndDate: '2026-09-03T00:00:00+07:00', TimeRange: 'O' }));
+      const odata = encodeURIComponent("(TransDate ge datetime'2026-09-01T00:00:00' and TransDate lt datetime'2026-09-03T00:00:00')");
+      const cands = [
+        '/api/cashflow?format=json&Includes=User&%24inlinecount=allpages&%24top=5',
+        '/api/cashflow?format=json&%24inlinecount=allpages&%24top=5&%24filter=' + odata,
+        '/api/cashflows?format=json&%24top=5',
+        '/api/cashflow/getlist?format=json&Filter=' + filt,
+        '/api/cashflow/list?format=json&Filter=' + filt,
+        '/api/cashbook?format=json&%24top=5',
+        '/api/cashflowgroup?format=json',
+        '/api/cashflow/groups?format=json',
+      ];
+      for (const u of cands) {
+        let status = 0, info = '';
+        try {
+          const r = await ctx.request.get('https://hotel.kiotviet.vn' + u, { headers: h, timeout: 20000 });
+          status = r.status();
+          const txt = await r.text();
+          try {
+            const j = JSON.parse(txt);
+            const list = Array.isArray(j) ? j : (j.Data || j.data || j.Result || j.result || j.Items || null);
+            info = 'trường: ' + (Array.isArray(j) ? '[mảng ' + j.length + ']' : Object.keys(j).slice(0, 15).join(','));
+            if (j.Total != null || j.total != null) info += ' · Total=' + (j.Total ?? j.total);
+            if (Array.isArray(list) && list.length) info += '\n      mẫu: ' + JSON.stringify(shape(list[0])).slice(0, 1500);
+          } catch (e) { info = 'không phải JSON: ' + scrub(txt).slice(0, 120).replace(/\s+/g, ' '); }
+        } catch (e) { info = 'lỗi: ' + scrub(e.message).slice(0, 120); }
+        report.probes.push({ url: u.slice(0, 160), status, info });
+      }
+    } else {
+      report.probes.push({ url: '-', status: 0, info: 'không bắt được header đăng nhập' });
+    }
     /* 4. In chi tiết các request của trang Sổ quỹ: tên header (không có giá trị) + 1 dòng mẫu */
     console.log('\n===== REQUEST CỦA TRANG SỔ QUỸ =====');
     calls.slice(before)
@@ -223,12 +264,20 @@ async function fillBy(page, re, value, label) {
     /* Tóm tắt ra log để đọc nhanh — không có dữ liệu tiền, chỉ có đường dẫn và tên trường */
     console.log('\n===== TÓM TẮT =====');
     console.log('Kết quả: ' + (report.ok ? 'mở được Sổ quỹ' : 'CHƯA mở được Sổ quỹ') + (report.error ? ' · ' + report.error : ''));
-    console.log('Các request API (' + calls.length + '):');
-    calls.forEach((c, i) => {
-      if (/google|analytics|sentry|apm\.|trackjs|freshchat|ktarget|feature-management/.test(c.url)) return;
-      const keys = c.body && typeof c.body === 'object' ? Object.keys(c.body).slice(0, 12).join(',') : '';
-      console.log(String(i).padStart(3) + ' ' + c.method + ' ' + c.status + ' ' + c.url + (keys ? '  {' + keys + '}' : ''));
+    const seen = new Set();
+    console.log('Request API khác trang Tổng quan:');
+    calls.forEach(c => {
+      const key = c.method + ' ' + c.url.split('?')[0];
+      if (NOISE.test(c.url) || seen.has(key)) return;
+      seen.add(key);
+      const keys = c.body && typeof c.body === 'object' ? Object.keys(c.body).slice(0, 14).join(',') : '';
+      console.log('  ' + c.method + ' ' + c.status + ' ' + c.url.slice(0, 260) + (keys ? '  {' + keys + '}' : ''));
     });
+    console.log('\n===== GỌI THỬ API SỔ QUỸ (chỉ GET) =====');
+    (report.probes || []).forEach(p => console.log('  ' + p.status + ' ' + p.url + '\n      ' + p.info));
+    console.log('\n===== MENU (' + (report.menu || []).length + ') =====');
+    (report.menu || []).forEach(a => console.log('  ' + a.text.padEnd(32) + ' ' + a.href));
+    console.log('\n' + (report.nav || []).join('\n'));
     await browser.close();
     process.exit(report.error ? 1 : 0);
   }
