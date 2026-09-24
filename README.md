@@ -23,13 +23,14 @@ Số tháng 8/2026 lấy đúng từ báo cáo thật. Các tháng khác sinh t�
 
 Dựng lại dữ liệu mẫu: vào **Cấu hình → Dựng lại từ đầu**.
 
-## 7 trang
+## 8 trang
 
 | Trang | Làm gì |
 |---|---|
 | Báo cáo tổng hợp | Thu / chi / lương / lợi nhuận một tháng + khuôn báo cáo emoji copy được |
 | Chi tiết chi phí | Từng loại chi, gom nhóm, biến động so tháng trước, bấm vào xem từng phiếu |
 | P&L theo năm | Bảng doanh thu – chi phí từng loại – lợi nhuận × 12 tháng |
+| Dữ liệu sổ quỹ | Sổ quỹ đã có tới ngày nào + lịch tháng thu/chi từng ngày, bấm ngày xem từng phiếu |
 | Chấm công | Bảng ngang nhân viên × ngày, gõ số giờ, Enter/mũi tên đi tiếp như Excel |
 | Bảng lương | Giờ × đơn giá − BHXH − tạm ứng, mã QR VietQR trên từng dòng |
 | Nhân viên | Hồ sơ + tài khoản nhận lương |
