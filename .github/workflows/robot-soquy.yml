@@ -1,0 +1,68 @@
+# Robot sổ quỹ: kéo phiếu thu/chi KiotViet Hotel về Firestore (ch_cash). Code ở robot/soquy/.
+#
+# Lịch (GitHub tính giờ UTC, VN = UTC+7). Lịch CHỈ chạy khi file này đã nằm trên nhánh main.
+#   '0 0-16 * * *'  → mỗi giờ đúng từ 7h đến 23h giờ VN
+#   '30 17 * * *'   → 0h30 giờ VN, chốt số ngày hôm trước
+# Push lên nhánh làm robot → tự CHẠY THỬ (không ghi gì).
+# Chạy tay: tab Actions → Robot sổ quỹ → Run workflow (sau khi đã merge vào main).
+#
+# Secrets: KV_SHOP, KV_USER, KV_PASS, FIREBASE_SERVICE_ACCOUNT. Thiếu tài khoản KiotViet thì tự bỏ qua.
+name: Robot sổ quỹ
+
+on:
+  schedule:
+    - cron: '0 0-16 * * *'
+    - cron: '30 17 * * *'
+  push:
+    branches: [claude/wizardly-maxwell-kzbqiy]
+    paths: ['robot/soquy/**', '.github/workflows/robot-soquy.yml']
+  workflow_dispatch:
+    inputs:
+      from:
+        description: 'Từ ngày (YYYY-MM-DD) — bỏ trống = tự chọn (cả tháng này)'
+        required: false
+      to:
+        description: 'Đến ngày (YYYY-MM-DD)'
+        required: false
+      dry_run:
+        description: 'Chạy thử: kéo và đối chiếu nhưng KHÔNG ghi'
+        type: boolean
+        default: false
+
+# Không để hai lần chạy chồng nhau (kể cả với bản khảo sát)
+concurrency:
+  group: robot-soquy
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: robot/soquy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Kéo sổ quỹ
+        env:
+          KV_SHOP: ${{ secrets.KV_SHOP }}
+          KV_USER: ${{ secrets.KV_USER }}
+          KV_PASS: ${{ secrets.KV_PASS }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          FROM: ${{ inputs.from }}
+          TO: ${{ inputs.to }}
+          DRY_RUN: ${{ github.event_name == 'push' || inputs.dry_run == true }}
+        run: node sync.js
+      - name: Đính kèm ảnh chụp khi lỗi
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: robot-so-quy-loi
+          path: robot/soquy/out/
+          if-no-files-found: ignore
+          retention-days: 7

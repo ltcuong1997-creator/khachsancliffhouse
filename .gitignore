@@ -2,3 +2,4 @@ node_modules/
 .firebase/
 functions/node_modules/
 *.local
+robot/soquy/out/

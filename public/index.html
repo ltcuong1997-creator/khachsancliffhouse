@@ -255,6 +255,101 @@ table.tb tfoot td{padding:11px 12px;border-top:2px solid var(--line);font-weight
 .stat.hero .up{color:#3FCB8E}
 .stat.hero .dn{color:#F08078}
 
+/* ================= BẢNG P&L =================
+   Đọc như báo cáo kế toán: chỉ ba dòng đậm (Doanh thu · Tổng chi phí · Lợi nhuận), nhóm chi
+   nhạt hơn, loại chi thụt vào và nhạt nhất. Nền chỉ dùng cho cột Cả năm và dòng Lợi nhuận. */
+table.pnl{width:100%;min-width:1080px;border-collapse:separate;border-spacing:0;font-size:13px;font-variant-numeric:tabular-nums}
+table.pnl th,table.pnl td{padding:9px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line-soft)}
+table.pnl th{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--txt-3);
+  background:var(--card);border-bottom:1px solid var(--line)}
+table.pnl .lbl{text-align:left;position:sticky;left:0;z-index:1;background:var(--card);min-width:220px;
+  box-shadow:inset -1px 0 0 var(--line-soft)}
+table.pnl th.lbl{z-index:2}
+table.pnl .yr{background:var(--brand-wash);font-weight:700;color:var(--ink)}
+table.pnl th.yr{color:var(--brand-dark)}
+table.pnl .pc{color:var(--txt-3);font-size:12px;min-width:62px}
+table.pnl .dim{color:var(--txt-3);opacity:.45}
+table.pnl .pos{color:var(--green)}
+table.pnl .neg{color:var(--red)}
+table.pnl sup{color:var(--amber);font-weight:700;margin-left:1px}
+table.pnl .em{display:inline-block;width:22px}
+table.pnl tr.r-head td{font-weight:700;font-size:13.5px;color:var(--ink)}
+table.pnl tr.sec td{padding:16px 10px 6px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--txt-3);border-bottom:none}
+table.pnl tr.r-grp td{font-weight:600;color:var(--txt)}
+table.pnl tr.r-grp td.lbl{padding-left:10px}
+table.pnl tr.tap{cursor:pointer}
+table.pnl tr.tap:hover td{background:#FBFAF9}
+table.pnl tr.tap:hover td.yr{background:#F6ECD6}
+table.pnl .chev{vertical-align:-2px;margin-right:6px;color:var(--txt-3);transition:transform .2s}
+table.pnl .chev.on{transform:rotate(90deg)}
+table.pnl .cnt{margin-left:7px;font-size:10.5px;font-weight:700;color:var(--txt-3);background:var(--canvas);
+  padding:1px 7px;border-radius:99px}
+table.pnl tr.r-item td{color:var(--txt-2);font-size:12.5px;padding-top:7px;padding-bottom:7px}
+table.pnl tr.r-item td.lbl{padding-left:32px}
+table.pnl tr.r-sum td{font-weight:700;color:var(--ink);border-top:1px solid var(--line);border-bottom:none}
+table.pnl tfoot tr.r-profit td{font-weight:800;font-size:14px;background:var(--canvas);border-top:2px solid var(--ink);border-bottom:none}
+table.pnl tfoot tr.r-profit td.lbl{background:var(--canvas);color:var(--ink)}
+table.pnl tfoot tr.r-profit td.yr{background:var(--brand-wash)}
+table.pnl tfoot tr.margin td{font-size:12px;color:var(--txt-3);border-bottom:none;padding-top:6px}
+
+/* ================= PHIẾU LƯƠNG =================
+   Cùng một khối .ps dùng cho bản xem trước trong hộp thoại và bản in. Đơn vị mm/pt để
+   in ra A4 đúng cỡ; màu chỉ dùng mực đen + một màu thương hiệu, in trắng đen vẫn đọc được. */
+.ps-paper{background:var(--canvas);border-radius:14px;padding:18px;overflow-x:auto}
+.ps-paper .ps{background:#fff;box-shadow:var(--sh-1);border-radius:6px;margin:0 auto}
+.ps{width:100%;max-width:190mm;padding:12mm 12mm 10mm;color:#14181C;font-family:var(--sans);font-size:10.5pt;line-height:1.45}
+.ps-top{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #14181C;padding-bottom:10px;margin-bottom:12px}
+.ps-brand{display:flex;gap:10px;align-items:center}
+.ps-brand img{width:42px;height:42px;border-radius:10px;object-fit:cover}
+.ps-brand b{display:block;font-size:14pt;font-weight:800;letter-spacing:-.01em}
+.ps-brand span{font-size:9pt;color:#5A6068}
+.ps-title{text-align:right}
+.ps-title h2{margin:0;font-size:17pt;font-weight:800;letter-spacing:.06em;color:#8C6220}
+.ps-title div{font-size:10.5pt;font-weight:600}
+.ps-info{display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;margin-bottom:12px}
+.ps-info .w2{grid-column:1/-1}
+.ps-info span{display:block;font-size:8.5pt;color:#8B9199;text-transform:uppercase;letter-spacing:.04em}
+.ps-info b{font-weight:600}
+.ps-tb{width:100%;border-collapse:collapse;margin-bottom:4px}
+.ps-tb td{padding:5px 0;border-bottom:1px dotted #D8D3D0}
+.ps-tb td:last-child{text-align:right;font-variant-numeric:tabular-nums}
+.ps-tb tr.b td{font-weight:700}
+.ps-tb tr.net td{font-size:13pt;font-weight:800;border-top:1.5px solid #14181C;border-bottom:1.5px solid #14181C;padding:7px 0;color:#8C6220}
+.ps-words{font-size:9.5pt;color:#5A6068;margin-bottom:12px}
+.ps-sec{font-size:9pt;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#5A6068;margin:12px 0 6px}
+.ps-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.ps-cal .hd{font-size:8pt;font-weight:700;color:#8B9199;text-align:center}
+.ps-cal .c{border:1px solid #E8E5E3;border-radius:4px;padding:2px 4px;display:flex;justify-content:space-between;align-items:baseline;min-height:22px}
+.ps-cal .c small{font-size:7.5pt;color:#8B9199}
+.ps-cal .c b{font-size:9.5pt;font-variant-numeric:tabular-nums;color:#C4C8CD}
+.ps-cal .c.has b{color:#14181C}
+.ps-cal .c.we{background:#FAF3E4}
+.ps-list{width:100%;border-collapse:collapse;font-size:9.5pt}
+.ps-list td{padding:3px 0;border-bottom:1px dotted #E8E5E3}
+.ps-list td:first-child{width:78px;color:#5A6068}
+.ps-list td:last-child{text-align:right;font-variant-numeric:tabular-nums}
+.ps-list tr.b td{font-weight:700;border-bottom:none}
+.ps-none{font-size:9.5pt;color:#8B9199}
+.ps-foot{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-top:16px}
+.ps-qr{display:flex;gap:10px;align-items:center}
+.ps-qr img{width:26mm;height:26mm;border:1px solid #E8E5E3;border-radius:6px}
+.ps-qr b{display:block;font-size:9.5pt}
+.ps-qr span{display:block;font-size:8.5pt;color:#5A6068}
+.ps-sign{display:flex;gap:28px;text-align:center}
+.ps-sign b{display:block;font-size:10pt}
+.ps-sign span{display:block;font-size:8.5pt;color:#8B9199;font-style:italic;padding-bottom:18mm}
+.ps-meta{margin-top:10px;padding-top:6px;border-top:1px solid #E8E5E3;font-size:8pt;color:#8B9199}
+.print-root{display:none}
+@media print{
+  @page{size:A4;margin:8mm}
+  body{background:#fff !important}
+  body > *:not(.print-root){display:none !important}
+  .print-root{display:block}
+  .print-root .ps{max-width:none;padding:0}
+  .ps-cal .c.we,.ps-tb tr.net td{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+
 /* ================= BIỂU ĐỒ ================= */
 .chart-wrap{padding:8px 18px 18px}
 .bar-row{display:flex;align-items:center;gap:12px;padding:6px 0;border-radius:9px;transition:background .16s}
@@ -762,12 +857,7 @@ const allMonths = () => {
 };
 
 function seedDb() {
-  /* Liệt kê theo dữ liệu THẬT đang có, không theo mốc cố định — sổ quỹ nạp tới đâu hiện tới đó */
-  const months = useMemo(() => {
-    const s = new Set((db.cash || []).map(c => String(c.date).slice(0, 7)));
-    Object.keys(db.timesheet || {}).forEach(k => s.add(k));
-    return Array.from(s).sort();
-  }, [db.cash, db.timesheet]);
+  const months = allMonths();
   const emps = SEED_EMP.map(e => ({ ...e }));
   const cash = [];
   const ts = {};
@@ -902,9 +992,10 @@ const authMsg = (e) => AUTH_ERR[(e && e.code)] || (e && e.message) || 'Lỗi kh�
    tốn thêm lượt đọc nào — rẻ hơn hẳn so với đọc lại theo từng màn hình. */
 async function cloudLoad() {
   const grab = (col) => FS.collection(col).get().catch(e => { console.warn(col, e.message); return { docs: [] }; });
-  const [emp, cash, ts, pay, cfg] = await Promise.all([
+  const [emp, cash, ts, pay, cfg, robot] = await Promise.all([
     grab(COL.emp), grab(COL.cash), grab(COL.ts), grab(COL.pay),
     FS.collection(COL.cfg).doc('main').get().catch(() => null),
+    FS.collection(COL.cfg).doc('robot').get().catch(() => null),
   ]);
   const out = { cash: [], employees: [], timesheet: {}, tsNames: {}, payroll: {}, closes: {}, cfg: {} };
   emp.docs.forEach(d => out.employees.push({ ...d.data(), id: d.id }));
@@ -916,6 +1007,8 @@ async function cloudLoad() {
     if (v.close) out.closes[d.id] = v.close;
   });
   if (cfg && cfg.exists) out.cfg = cfg.data() || {};
+  /* Nhịp tim của robot kéo sổ quỹ (GitHub Actions ghi mỗi lần chạy) — chỉ đọc, app không bao giờ ghi */
+  if (robot && robot.exists) out.robot = robot.data() || null;
   /* Nhân viên xếp theo tên cho mọi bảng đều cùng một thứ tự, không phụ thuộc thứ tự Firestore trả về */
   out.employees.sort((a, b) => noAccent(a.name || '').localeCompare(noAccent(b.name || ''), 'vi'));
   return out;
@@ -1029,13 +1122,14 @@ const hoursOf = (db, mk, empId) => {
 };
 
 /* Tạm ứng app tự tìm được trong sổ quỹ cho một người trong một tháng */
-const autoAdvance = (db, mk, emp) => {
+const advanceRows = (db, mk, emp) => {
   const key = noAccent(emp.name).toLowerCase();
   return rowsOfMonth(db, mk)
     .filter(x => x.type === 'chi' && x.cat === ADVANCE_CAT
       && (x.empId === emp.id || noAccent(x.note || '').toLowerCase().includes(key)))
-    .reduce((a, b) => a + b.amount, 0);
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)));
 };
+const autoAdvance = (db, mk, emp) => advanceRows(db, mk, emp).reduce((a, b) => a + b.amount, 0);
 
 /* Một dòng bảng lương — có ghi đè tay thì lấy tay, không thì lấy số app tính */
 const payRow = (db, mk, emp) => {
@@ -1584,6 +1678,33 @@ function ExpensePage() {
 }
 
 /* ===================== TRANG 3 — P&L THEO NĂM ===================== */
+const capFirst = (t) => String(t).charAt(0).toUpperCase() + String(t).slice(1);
+/* Số trong bảng P&L: đơn vị triệu, một số lẻ — mọi cột cùng một kiểu thì mắt so được theo chiều dọc */
+const mil = (v) => (n0(v) ? (v / 1e6).toLocaleString('vi-VN', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : '');
+
+/* Một dòng của bảng P&L. kind: head (doanh thu) · grp (nhóm chi, bấm mở) · item (loại chi) · sum · profit */
+function PnlRow({ kind, label, icon, vals, total, base, months, open, onToggle, count, marks }) {
+  const signed = kind === 'profit';
+  const tone = (v) => (signed ? (v >= 0 ? 'pos' : 'neg') : '');
+  return (
+    <tr className={'r-' + kind + (onToggle ? ' tap' : '')} onClick={onToggle}>
+      <td className="lbl">
+        {onToggle && <Ic.chev size={13} className={'ic chev' + (open ? ' on' : '')} />}
+        {icon && <span className="em">{icon}</span>}
+        {label}
+        {count > 1 && !open && <span className="cnt">{count}</span>}
+      </td>
+      {vals.map((v, i) => (
+        <td key={i} className={cls(months[i].empty && 'dim', tone(v))} title={v ? moneyD(v) : ''}>
+          {months[i].empty && !v ? '' : mil(v)}{marks && marks[i] ? <sup>*</sup> : null}
+        </td>
+      ))}
+      <td className={cls('yr', tone(total))} title={moneyD(total)}>{mil(total) || '0'}</td>
+      <td className="pc">{kind !== 'head' && base ? (total / base * 100).toFixed(1).replace('.', ',') + '%' : kind === 'head' ? '100%' : ''}</td>
+    </tr>
+  );
+}
+
 function PnlPage() {
   const { db } = useApp();
   const [y, setY] = useState(() => new Date().getFullYear());
@@ -1598,11 +1719,31 @@ function PnlPage() {
   const cats = useMemo(() => yearCats(db, y), [db, y]);
   const live = ys.months.filter(s => !s.empty);
 
-  /* Bảng rất rộng (14 cột) — cho cuộn ngang, cột đầu ghim lại để không lạc dòng */
-  const catRow = (c) => ys.months.map(s => {
-    const b = catBreak(db, s.mk).find(x => x.cat === c.cat);
-    return b ? b.amount : 0;
-  });
+  /* Chi phí gom theo nhóm (Nhân sự, Bán hàng...) — mặc định chỉ hiện tổng nhóm, bấm mới xổ ra.
+     Lương theo bảng công đứng chung nhóm Nhân sự với phiếu chi lương/BHXH trong sổ quỹ. */
+  const [open, setOpen] = useState({});
+  const groups = useMemo(() => {
+    const monthCats = ys.months.map(s => catBreak(db, s.mk));
+    const by = {};
+    const add = (g, item) => { (by[g] = by[g] || []).push(item); };
+    cats.forEach(c => add(c.g, {
+      key: c.cat, label: capFirst(c.cat.replace(/^Chi phí\s+/, '')), e: c.e, total: c.total,
+      vals: monthCats.map(mc => (mc.find(x => x.cat === c.cat) || {}).amount || 0),
+    }));
+    if (ys.tot.salary) add('Nhân sự', {
+      key: '__salary', label: 'Lương theo bảng công', e: '📊', total: ys.tot.salary,
+      vals: ys.months.map(s => s.salary), marks: ys.months.map(s => !!s.salary && !s.closed),
+    });
+    return Object.keys(by).map(g => {
+      const items = by[g].sort((a, b) => b.total - a.total);
+      return {
+        g, items,
+        total: items.reduce((a, it) => a + it.total, 0),
+        vals: ys.months.map((_, i) => items.reduce((a, it) => a + it.vals[i], 0)),
+      };
+    }).sort((a, b) => b.total - a.total);
+  }, [db, cats, ys]);
+  const allOpen = groups.length > 0 && groups.every(g => open[g.g]);
 
   const best = live.length ? live.reduce((a, b) => (b.profit > a.profit ? b : a)) : null;
   const worst = live.length ? live.reduce((a, b) => (b.profit < a.profit ? b : a)) : null;
@@ -1641,76 +1782,55 @@ function PnlPage() {
 
       <div className="card">
         <div className="card-h">
-          <div><h3>Bảng P&amp;L chi tiết</h3><p>Cuộn ngang để xem hết 12 tháng · cột Cả năm ghim ở cuối</p></div>
+          <div><h3>Bảng P&amp;L chi tiết</h3><p>Đơn vị: triệu đồng · bấm vào từng nhóm để xem các loại chi bên trong</p></div>
+          <div className="sp">
+            <button className="btn sm" onClick={() => setOpen(allOpen ? {} : Object.fromEntries(groups.map(g => [g.g, true])))}>
+              {allOpen ? 'Thu gọn' : 'Mở tất cả'}
+            </button>
+          </div>
         </div>
         <div className="scroll-x">
-          <table className="tb" style={{ minWidth: 1100 }}>
+          <table className="pnl">
             <thead>
               <tr>
-                <th style={{ position: 'sticky', left: 0, zIndex: 2, background: '#FCFBF9', minWidth: 210 }}>Khoản mục</th>
-                {ys.months.map(s => <th key={s.m} className="r" style={{ opacity: s.empty ? .4 : 1 }}>T{s.m}</th>)}
-                <th className="r" style={{ background: 'var(--brand-wash)', color: 'var(--brand-dark)' }}>Cả năm</th>
+                <th className="lbl">Khoản mục</th>
+                {ys.months.map(s => <th key={s.m} className={s.empty ? 'dim' : ''}>T{s.m}</th>)}
+                <th className="yr">Cả năm</th>
+                <th className="pc">% DT</th>
               </tr>
             </thead>
             <tbody>
-              <tr style={{ background: 'var(--green-wash)' }}>
-                <td style={{ position: 'sticky', left: 0, zIndex: 1, background: 'var(--green-wash)', fontWeight: 700 }}>💰 Doanh thu</td>
-                {ys.months.map(s => <td key={s.m} className="r mono">{s.thu ? short(s.thu) : '—'}</td>)}
-                <td className="r mono" style={{ background: 'var(--brand-wash)', fontWeight: 800 }}>{short(ys.tot.thu)}</td>
-              </tr>
-              {cats.map(c => {
-                const vals = catRow(c);
-                return (
-                  <tr key={c.cat}>
-                    <td style={{ position: 'sticky', left: 0, zIndex: 1, background: '#fff', whiteSpace: 'nowrap' }}>
-                      <span style={{ marginRight: 6 }}>{c.e}</span>{c.cat.replace(/^Chi phí\s+/, '')}
-                    </td>
-                    {vals.map((v, i) => <td key={i} className="r mono" style={{ color: v ? 'var(--txt-2)' : 'var(--txt-3)' }}>{v ? short(v) : '·'}</td>)}
-                    <td className="r mono" style={{ background: 'var(--brand-wash)', fontWeight: 700 }}>{short(c.total)}</td>
-                  </tr>
-                );
-              })}
-              <tr style={{ background: '#FCFBF9' }}>
-                <td style={{ position: 'sticky', left: 0, zIndex: 1, background: '#FCFBF9', fontWeight: 700 }}>💸 Tổng chi sổ quỹ</td>
-                {ys.months.map(s => <td key={s.m} className="r mono"><b>{s.chi ? short(s.chi) : '—'}</b></td>)}
-                <td className="r mono" style={{ background: 'var(--brand-wash)', fontWeight: 800 }}>{short(ys.tot.chi)}</td>
-              </tr>
-              <tr style={{ background: 'var(--violet-wash)' }}>
-                <td style={{ position: 'sticky', left: 0, zIndex: 1, background: 'var(--violet-wash)', fontWeight: 700 }}>📊 Chi phí lương</td>
-                {ys.months.map(s => (
-                  <td key={s.m} className="r mono" title={s.closed ? 'Đã chốt' : 'Tạm tính'}>
-                    {s.salary ? short(s.salary) : '—'}{s.salary && !s.closed ? '*' : ''}
-                  </td>
-                ))}
-                <td className="r mono" style={{ background: 'var(--brand-wash)', fontWeight: 800 }}>{short(ys.tot.salary)}</td>
-              </tr>
+              <PnlRow kind="head" label="Doanh thu" vals={ys.months.map(s => s.thu)} total={ys.tot.thu} base={ys.tot.thu} months={ys.months} />
+
+              <tr className="sec"><td className="lbl">Chi phí</td>{ys.months.map(s => <td key={s.m} />)}<td className="yr" /><td className="pc" /></tr>
+              {groups.map(g => (
+                <React.Fragment key={g.g}>
+                  <PnlRow kind="grp" label={g.g} vals={g.vals} total={g.total} base={ys.tot.thu} months={ys.months}
+                    open={!!open[g.g]} onToggle={() => setOpen(o => ({ ...o, [g.g]: !o[g.g] }))} count={g.items.length} />
+                  {open[g.g] && g.items.map(it => (
+                    <PnlRow key={it.key} kind="item" label={it.label} icon={it.e} vals={it.vals} total={it.total}
+                      base={ys.tot.thu} months={ys.months} marks={it.marks} />
+                  ))}
+                </React.Fragment>
+              ))}
+              <PnlRow kind="sum" label="Tổng chi phí" vals={ys.months.map(s => s.chi + s.salary)} total={ys.tot.chi + ys.tot.salary}
+                base={ys.tot.thu} months={ys.months} />
             </tbody>
             <tfoot>
-              <tr>
-                <td style={{ position: 'sticky', left: 0, zIndex: 1, background: '#FCFBF9' }}>👍 Lợi nhuận</td>
-                {ys.months.map(s => (
-                  <td key={s.m} className="r mono" style={{ color: s.empty ? 'var(--txt-3)' : s.profit >= 0 ? 'var(--green)' : 'var(--red)' }}>
-                    {s.empty ? '—' : short(s.profit)}
-                  </td>
-                ))}
-                <td className="r mono" style={{ background: 'var(--brand-wash)', color: ys.tot.profit >= 0 ? 'var(--green)' : 'var(--red)' }}>{short(ys.tot.profit)}</td>
-              </tr>
-              <tr>
-                <td style={{ position: 'sticky', left: 0, zIndex: 1, background: '#FCFBF9', fontWeight: 500, color: 'var(--txt-3)' }}>Biên lợi nhuận</td>
-                {ys.months.map(s => (
-                  <td key={s.m} className="r mono" style={{ fontWeight: 500, color: 'var(--txt-3)' }}>
-                    {s.empty || !s.thu ? '—' : (s.profit / s.thu * 100).toFixed(0) + '%'}
-                  </td>
-                ))}
-                <td className="r mono" style={{ background: 'var(--brand-wash)', fontWeight: 600 }}>
-                  {ys.tot.thu ? (ys.tot.profit / ys.tot.thu * 100).toFixed(1).replace('.', ',') + '%' : '—'}
-                </td>
+              <PnlRow kind="profit" label="Lợi nhuận" vals={ys.months.map(s => s.profit)} total={ys.tot.profit} base={ys.tot.thu} months={ys.months} />
+              <tr className="margin">
+                <td className="lbl">Biên lợi nhuận</td>
+                {ys.months.map(s => <td key={s.m}>{s.empty || !s.thu ? '' : (s.profit / s.thu * 100).toFixed(0) + '%'}</td>)}
+                <td className="yr">{ys.tot.thu ? (ys.tot.profit / ys.tot.thu * 100).toFixed(1).replace('.', ',') + '%' : ''}</td>
+                <td className="pc"></td>
               </tr>
             </tfoot>
           </table>
         </div>
         <div className="card-b" style={{ paddingTop: 10, borderTop: '1px solid var(--line-soft)' }}>
-          <div className="hint">Số có dấu <b>*</b> là lương tạm tính (chưa bấm chốt đã chi). Mọi số rút gọn — rê chuột hoặc xem trang Báo cáo để thấy số đầy đủ.</div>
+          <div className="hint">
+            Dấu <b>*</b> là lương tạm tính theo bảng công (tháng đó chưa bấm “Chốt đã chi lương”). Rê chuột vào một ô để xem số đầy đủ.
+          </div>
         </div>
       </div>
     </div>
@@ -1942,11 +2062,166 @@ function TimesheetPage() {
 const d0 = (d) => String(d);
 
 /* ===================== TRANG 5 — BẢNG LƯƠNG ===================== */
+/* ===================== PHIẾU LƯƠNG (IN / PDF) =====================
+   Không dùng thư viện PDF: thư viện nào cũng phải nhúng font riêng mới ra được dấu tiếng Việt,
+   nặng mà chữ vẫn xấu. Ở đây dựng phiếu bằng HTML rồi gọi lệnh In của trình duyệt — chọn
+   "Lưu thành PDF" là có file, chữ nét như trên màn hình, điện thoại cũng làm được. */
+const VN_DIGIT = ['không', 'một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám', 'chín'];
+/* Đọc một nhóm 3 chữ số. full = nhóm này đứng sau nhóm khác nên phải đọc đủ "không trăm", "lẻ" */
+function vnTriple(n, full) {
+  const h = Math.floor(n / 100), t = Math.floor(n / 10) % 10, u = n % 10, out = [];
+  if (h || full) out.push(VN_DIGIT[h], 'trăm');
+  if (t > 1) out.push(VN_DIGIT[t], 'mươi');
+  else if (t === 1) out.push('mười');
+  else if (u && (h || full)) out.push('lẻ');
+  if (u === 1 && t > 1) out.push('mốt');
+  else if (u === 5 && t > 0) out.push('lăm');
+  else if (u === 4 && t > 1) out.push('tư');
+  else if (u) out.push(VN_DIGIT[u]);
+  return out.join(' ');
+}
+function vnWords(v) {
+  let n = Math.abs(n0(v));
+  if (!n) return 'Không đồng';
+  const units = ['', 'nghìn', 'triệu', 'tỷ', 'nghìn tỷ', 'triệu tỷ'];
+  const groups = [];
+  while (n > 0) { groups.push(n % 1000); n = Math.floor(n / 1000); }
+  const parts = [];
+  for (let i = groups.length - 1; i >= 0; i--) {
+    if (!groups[i]) continue;
+    parts.push(vnTriple(groups[i], i < groups.length - 1) + (units[i] ? ' ' + units[i] : ''));
+  }
+  const s = (v < 0 ? 'âm ' : '') + parts.join(' ') + ' đồng';
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function Payslip({ db, mk, row }) {
+  const { emp } = row;
+  const { y, m } = mParse(mk);
+  const dim = daysIn(y, m);
+  const cells = ((db.timesheet || {})[mk] || {})[emp.id] || {};
+  const workDays = Object.values(cells).filter(v => Number(v) > 0).length;
+  const adv = advanceRows(db, mk, emp);
+  const st = monthStats(db, mk);
+  /* Lịch bắt đầu từ thứ Hai: ô trống đầu tháng cho ngày 1 rơi đúng cột */
+  const lead = (dowOf(y, m, 1) + 6) % 7;
+  const qr = hasBank(emp) && row.net > 0 ? vietQr(emp, row.net, qrContent(emp, mk), 'qr_only') : null;
+
+  return (
+    <div className="ps">
+      <div className="ps-top">
+        <div className="ps-brand">
+          {BRAND.logo && <img src={BRAND.logo} alt="" />}
+          <div><b>{BRAND.name}</b><span>{BRAND.sub}</span></div>
+        </div>
+        <div className="ps-title">
+          <h2>PHIẾU LƯƠNG</h2>
+          <div>{mLabel(mk)}</div>
+        </div>
+      </div>
+
+      <div className="ps-info">
+        <div><span>Họ tên</span><b>{emp.name}</b></div>
+        <div><span>Chức danh</span><b>{emp.title || '—'}</b></div>
+        <div><span>Số điện thoại</span><b>{emp.phone || '—'}</b></div>
+        <div><span>Ngày vào làm</span><b>{emp.joined ? dFull(emp.joined) : '—'}</b></div>
+        <div className="w2"><span>Tài khoản nhận</span><b>{hasBank(emp) ? bankName(emp.bin) + ' · ' + emp.accNo + (emp.accName ? ' · ' + emp.accName : '') : 'Chưa có số tài khoản'}</b></div>
+      </div>
+
+      <table className="ps-tb">
+        <tbody>
+          <tr><td>Giờ công trong tháng</td><td>{hrs(row.hours)} giờ · {workDays} ngày</td></tr>
+          <tr><td>Đơn giá</td><td>{moneyD(emp.rate)} / giờ</td></tr>
+          <tr className="b"><td>Lương gộp</td><td>{moneyD(row.gross)}</td></tr>
+          <tr><td>Trừ BHXH</td><td>{row.bhxh ? '− ' + moneyD(row.bhxh) : '0 đ'}</td></tr>
+          <tr><td>Trừ tạm ứng</td><td>{row.advance ? '− ' + moneyD(row.advance) : '0 đ'}</td></tr>
+          <tr className="net"><td>THỰC LĨNH</td><td>{moneyD(row.net)}</td></tr>
+        </tbody>
+      </table>
+      <div className="ps-words">Bằng chữ: <i>{vnWords(row.net)}</i></div>
+
+      <div className="ps-sec">Bảng chấm công {mLabel(mk).toLowerCase()}</div>
+      <div className="ps-cal">
+        {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map(d => <div key={d} className="hd">{d}</div>)}
+        {Array.from({ length: lead }, (_, i) => <div key={'p' + i} className="pad" />)}
+        {Array.from({ length: dim }, (_, i) => {
+          const d = i + 1, v = Number(cells[d]) || 0;
+          return (
+            <div key={d} className={cls('c', v && 'has', isWeekend(y, m, d) && 'we')}>
+              <small>{d}</small><b>{v ? hrs(v) : '·'}</b>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="ps-sec">Tạm ứng trong tháng</div>
+      {adv.length ? (
+        <table className="ps-list">
+          <tbody>
+            {adv.map(a => <tr key={a.id}><td>{dFull(a.date)}</td><td>{a.note || a.cat}</td><td>{moneyD(a.amount)}</td></tr>)}
+            <tr className="b"><td colSpan="2">Cộng theo sổ quỹ</td><td>{moneyD(row.advanceAuto)}</td></tr>
+          </tbody>
+        </table>
+      ) : <div className="ps-none">Không có phiếu tạm ứng nào trong sổ quỹ.</div>}
+      {row.advOverride && row.advance !== row.advanceAuto && (
+        <div className="ps-none">Số tạm ứng trừ vào lương đã được điều chỉnh tay thành {moneyD(row.advance)}.</div>
+      )}
+
+      <div className="ps-foot">
+        {qr ? (
+          <div className="ps-qr">
+            <img src={qr} alt="QR chuyển khoản" />
+            <div><b>Quét để chuyển khoản</b><span>{qrContent(emp, mk)}</span><span>{row.paid ? '✓ Đã chuyển' : 'Chưa chuyển'}</span></div>
+          </div>
+        ) : <div className="ps-qr"><div><span>{row.paid ? '✓ Đã chuyển' : 'Chưa chuyển'}</span></div></div>}
+        <div className="ps-sign">
+          <div><b>Người lập phiếu</b><span>(Ký, ghi rõ họ tên)</span></div>
+          <div><b>Người nhận lương</b><span>(Ký, ghi rõ họ tên)</span></div>
+        </div>
+      </div>
+      <div className="ps-meta">
+        In ngày {dFull(todayKey())} · Lương {st.closed ? 'đã chốt' : 'tạm tính — có thể còn thay đổi'}
+      </div>
+    </div>
+  );
+}
+
+/* Xem trước phiếu + nút in. Bản để in được đặt thẳng dưới <body> (portal) vì khi in,
+   mọi thứ khác trong trang bị ẩn đi — kể cả cái hộp thoại này. */
+function PayslipModal({ db, mk, row, onClose }) {
+  const [busy, setBusy] = useState(false);
+  const doPrint = async () => {
+    setBusy(true);
+    /* Chờ ảnh (logo, QR) tải xong rồi mới in, không thì PDF ra ô trống */
+    const imgs = Array.from(document.querySelectorAll('.print-root img'));
+    await Promise.all(imgs.map(im => im.complete ? 0 : new Promise(r => { im.onload = im.onerror = r; setTimeout(r, 4000); })));
+    const old = document.title;
+    /* Tên file PDF gợi ý lấy theo tiêu đề trang */
+    document.title = noAccent('Phieu luong T' + mParse(mk).m + '-' + mParse(mk).y + ' - ' + row.emp.name);
+    window.print();
+    setTimeout(() => { document.title = old; setBusy(false); }, 500);
+  };
+  return (
+    <>
+      <Modal wide title={'Phiếu lương · ' + row.emp.name} sub={mLabel(mk) + ' · thực lĩnh ' + moneyD(row.net)} onClose={onClose}
+        foot={<>
+          <span className="hint" style={{ marginRight: 'auto', alignSelf: 'center' }}>Ở hộp thoại In, chọn “Lưu thành PDF”</span>
+          <button className="btn" onClick={onClose}>Đóng</button>
+          <button className="btn pri" disabled={busy} onClick={doPrint}><Ic.down size={14} /> Tải PDF / In</button>
+        </>}>
+        <div className="ps-paper"><Payslip db={db} mk={mk} row={row} /></div>
+      </Modal>
+      {ReactDOM.createPortal(<div className="print-root"><Payslip db={db} mk={mk} row={row} /></div>, document.body)}
+    </>
+  );
+}
+
 function PayrollPage() {
   const { db, setPay, closeMonth, openMonth, toast } = useApp();
   const [mk, setMk] = useState(() => mAdd(thisMonth(), -1));
   const [zoom, setZoom] = useState(null);
   const [closing, setClosing] = useState(false);
+  const [slip, setSlip] = useState(null);
   const st = monthStats(db, mk);
   const emps = (db.employees || []).filter(e => hoursOf(db, mk, e.id) > 0 || e.status === 'active');
   const rows = emps.map(e => payRow(db, mk, e)).filter(r => r.hours > 0 || r.bhxh || r.advance);
@@ -2009,7 +2284,7 @@ function PayrollPage() {
       <div className="card">
         <div className="card-h"><div><h3>Chi tiết từng người</h3><p>Bấm mã QR để phóng to · tích ô cuối khi đã chuyển xong</p></div></div>
         <div className="scroll-x">
-          <table className="tb" style={{ minWidth: 980 }}>
+          <table className="tb" style={{ minWidth: 1070 }}>
             <thead>
               <tr>
                 <th>Nhân viên</th>
@@ -2021,10 +2296,11 @@ function PayrollPage() {
                 <th className="r">Thực lĩnh</th>
                 <th style={{ width: 70, textAlign: 'center' }}>QR</th>
                 <th style={{ width: 96, textAlign: 'center' }}>Đã chuyển</th>
+                <th style={{ width: 90, textAlign: 'center' }}>Phiếu</th>
               </tr>
             </thead>
             <tbody>
-              {!rows.length && <tr><td colSpan="9"><div className="empty">Tháng này chưa ai có giờ công. Vào trang Chấm công nhập giờ trước.</div></td></tr>}
+              {!rows.length && <tr><td colSpan="10"><div className="empty">Tháng này chưa ai có giờ công. Vào trang Chấm công nhập giờ trước.</div></td></tr>}
               {rows.map(r => (
                 <tr key={r.emp.id} style={r.paid ? { opacity: .62 } : null}>
                   <td>
@@ -2064,6 +2340,9 @@ function PayrollPage() {
                     <input type="checkbox" style={{ width: 18, height: 18, accentColor: 'var(--brand)' }}
                       checked={r.paid} onChange={e => setPay(mk, r.emp.id, { paid: e.target.checked })} />
                   </td>
+                  <td style={{ textAlign: 'center' }}>
+                    <button className="btn sm" title="Xem và tải phiếu lương PDF" onClick={() => setSlip(r)}>📄 PDF</button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -2077,7 +2356,7 @@ function PayrollPage() {
                   <td className="r mono">{money(tot.bhxh)}</td>
                   <td className="r mono">{money(tot.advance)}</td>
                   <td className="r mono" style={{ fontSize: 15, color: 'var(--brand-dark)' }}>{money(tot.net)}</td>
-                  <td colSpan="2"></td>
+                  <td colSpan="3"></td>
                 </tr>
               </tfoot>
             )}
@@ -2107,6 +2386,8 @@ function PayrollPage() {
           </div>
         </Modal>
       )}
+
+      {slip && <PayslipModal db={db} mk={mk} row={rows.find(r => r.emp.id === slip.emp.id) || slip} onClose={() => setSlip(null)} />}
 
       {closing && <CloseModal mk={mk} gross={tot.gross} onClose={() => setClosing(false)}
         onDone={(amount, ids) => { closeMonth(mk, amount, ids); setClosing(false); toast('Đã chốt lương ' + mLabel(mk).toLowerCase()); }} />}
@@ -2737,6 +3018,63 @@ function ImportModal({ onClose }) {
 }
 
 /* ===================== TRANG 7 — CẤU HÌNH ===================== */
+/* Robot kéo sổ quỹ chạy trên GitHub Actions (robot/soquy/) và ghi nhịp tim vào ch_config/robot.
+   Thẻ này chỉ đọc nhịp tim đó: lần chạy gần nhất, được hay lỗi, tổng có khớp KiotViet không. */
+function RobotCard({ beat }) {
+  const ago = (iso) => {
+    const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+    if (m < 1) return 'vừa xong';
+    if (m < 60) return m + ' phút trước';
+    if (m < 60 * 24) return Math.round(m / 60) + ' giờ trước';
+    return Math.round(m / 1440) + ' ngày trước';
+  };
+  /* Robot chạy mỗi giờ 7h–23h: quá 3 tiếng không thấy nhịp tim là có chuyện */
+  const stale = beat && beat.at && (Date.now() - new Date(beat.at).getTime()) > 3 * 3600e3;
+  const tone = !beat ? 't-gray' : !beat.ok ? 't-red' : (stale || (beat.warn || []).length) ? 't-amber' : 't-green';
+  const label = !beat ? 'chưa chạy' : !beat.ok ? 'lỗi' : stale ? 'lâu không chạy' : (beat.warn || []).length ? 'có cảnh báo' : 'bình thường';
+  const months = Object.entries((beat && beat.months) || {}).sort();
+  return (
+    <div className="card">
+      <div className="card-h">
+        <div><h3>Robot tự nạp sổ quỹ</h3><p>Kéo từ KiotViet mỗi giờ 7h–23h và lúc 0h30 · chạy trên GitHub</p></div>
+        <div className="sp"><span className={'tag ' + tone}>{label}</span></div>
+      </div>
+      <div className="card-b">
+        {!beat ? (
+          <div className="hint">Robot chưa ghi lần chạy nào. Nó chỉ chạy theo lịch sau khi code đã nằm trên nhánh <b>main</b> và đủ 4 secrets (xem SETUP.md).</div>
+        ) : (
+          <>
+            <div style={{ fontSize: 13.5, lineHeight: 1.8 }}>
+              Lần chạy gần nhất: <b>{ago(beat.at)}</b> ({new Date(beat.at).toLocaleString('vi-VN')})
+              {beat.ok ? <> · kéo <b>{beat.rows}</b> phiếu từ {dFull(beat.from)} đến {dFull(beat.to)}</> : null}
+              {beat.run ? <> · <a href={beat.run} target="_blank" rel="noopener" style={{ color: 'var(--brand-dark)', fontWeight: 600 }}>xem chi tiết</a></> : null}
+            </div>
+            {beat.error && <div className="err" style={{ marginTop: 10 }}>{beat.error}</div>}
+            {months.length > 0 && (
+              <table className="tb" style={{ marginTop: 10 }}>
+                <thead><tr><th>Tháng</th><th className="r">Phiếu</th><th className="r">Thu</th><th className="r">Chi</th><th>So với KiotViet</th></tr></thead>
+                <tbody>
+                  {months.map(([mk, m]) => (
+                    <tr key={mk}>
+                      <td>{mLabel(mk)}</td>
+                      <td className="r mono">{m.n}</td>
+                      <td className="r mono">{money(m.thu)}</td>
+                      <td className="r mono">{money(m.chi)}</td>
+                      <td>{m.match ? <span className="tag t-green">khớp</span>
+                        : <span className="tag t-amber" title={'KiotViet: thu ' + money(m.kvThu) + ' · chi ' + money(m.kvChi)}>lệch</span>}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            {(beat.warn || []).map((w, i) => <div key={i} className="banner" style={{ marginTop: 10, marginBottom: 0 }}><Ic.warn size={15} /><div>{w}</div></div>)}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function SettingsPage() {
   const { db, saveCfg, resetDemo, seedCloud, wipeCloud, reload, toast, user } = useApp();
   const [busy, setBusy] = useState('');
@@ -2769,9 +3107,11 @@ function SettingsPage() {
         </div>
       )}
 
+      <RobotCard beat={db.robot} />
+
       <div className="card">
         <div className="card-h">
-          <div><h3>Nạp sổ quỹ hằng tháng</h3><p>Xuất Excel từ KiotViet rồi thả vào đây — mỗi tháng một lần</p></div>
+          <div><h3>Nạp tay bằng file Excel</h3><p>Dự phòng khi robot lỗi, hoặc để nạp các tháng trước 9/2026</p></div>
           <div className="sp"><button className="btn pri" onClick={() => setImp(true)}><Ic.down size={15} /> Nạp file sổ quỹ</button></div>
         </div>
         <div className="card-b">
@@ -2781,8 +3121,8 @@ function SettingsPage() {
             <li>Quay lại đây, bấm <b>Nạp file sổ quỹ</b> và thả file vào</li>
           </ol>
           <div className="hint" style={{ marginTop: 12 }}>
-            Gói KiotViet Hotel đang dùng không mở API nên không tự đồng bộ được — bù lại cách này
-            không cần khoá, không cần mật khẩu, và không gãy khi KiotViet đổi giao diện.
+            Từ tháng 9/2026 robot tự nạp mỗi giờ, thường không cần làm tay. Nạp tay một tháng mà robot
+            cũng đang kéo thì lần chạy kế tiếp của robot sẽ ghi đè lại theo KiotViet.
             Lần đầu app hỏi cột nào là ngày, cột nào là số tiền; ghép một lần rồi nhớ luôn.
             Nạp lại cùng một tháng thì <b>đè lên</b>, không nhân đôi số liệu.
           </div>
