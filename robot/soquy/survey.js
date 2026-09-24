@@ -155,36 +155,65 @@ async function fillBy(page, re, value, label) {
     await shot(page, 'sau-dang-nhap');
     if (/\/login/i.test(page.url())) throw new Error('Vẫn ở trang đăng nhập — sai tài khoản, hoặc bị hỏi thêm bước xác minh. Xem ảnh sau-dang-nhap.');
 
-    /* 2. Ghi lại menu để biết Sổ quỹ nằm ở đâu */
-    report.menu = await page.$$eval('a', as => as
-      .filter(a => a.offsetParent !== null || /quỹ|thu chi|cash/i.test(a.innerText + a.href))
-      .map(a => ({ text: (a.innerText || '').trim().slice(0, 40), href: a.getAttribute('href') || '' }))
-      .filter(a => a.text || a.href).slice(0, 150));
+    /* 2. Ghi lại menu để biết Sổ quỹ nằm ở đâu — lấy cả mục đang ẩn trong menu xổ xuống */
+    const shopSeg = (page.url().match(/mhqlv2\/([^/]+)\//) || [])[1];
+    const hideShop = (s) => (shopSeg ? String(s).split(shopSeg).join('<gian-hang>') : String(s));
+    report.menu = (await page.$$eval('a', as => as
+      .map(a => ({ text: (a.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 40), href: a.getAttribute('href') || '' }))
+      .filter(a => a.text && a.href && a.href !== '#' && !/^javascript/i.test(a.href))))
+      .map(a => ({ text: a.text, href: hideShop(a.href) }))
+      .filter((a, i, arr) => arr.findIndex(b => b.href === a.href) === i)
+      .slice(0, 200);
+    console.log('\n===== MENU (' + report.menu.length + ') =====');
+    report.menu.forEach(a => console.log('  ' + a.text.padEnd(32) + ' ' + a.href));
 
-    /* 3. Mở Sổ quỹ: bấm menu nếu thấy, không thì thử các đường dẫn quen của KiotViet */
+    /* 3. Mở Sổ quỹ. Chỉ coi là mở được khi tiêu đề/địa chỉ/nội dung trang thật sự đổi sang Sổ quỹ —
+       không đếm request, vì trang Tổng quan cũng bắn rất nhiều request. */
     const before = calls.length;
+    const isCashPage = async () => {
+      const t = await page.title().catch(() => '');
+      const h = await page.locator('h1, h2, h3, .page-title, .title').allTextContents().catch(() => []);
+      return /sổ quỹ|so-quy|cashbook|cashflow/i.test(t + ' ' + h.join(' ')) && !/tổng quan/i.test(t);
+    };
     let opened = false;
-    const link = page.locator('a, li, span').filter({ hasText: /^\s*Sổ quỹ\s*$/i }).first();
-    if (await link.count()) {
-      /* Mục menu có thể nằm trong menu xổ xuống — hiện ra trước khi bấm */
-      const parent = page.locator('a, li, span').filter({ hasText: /^\s*(Báo cáo|Thu chi|Tài chính)\s*$/i }).first();
-      if (await parent.count()) await parent.hover().catch(() => { });
-      await link.click({ timeout: 8000 }).then(() => { opened = true; }).catch(() => { });
+    /* a) bấm đúng link có chữ "Sổ quỹ" (kể cả đang ẩn trong menu con) */
+    const cashLink = await page.$$eval('a', as => {
+      const a = as.find(x => /^\s*sổ quỹ\s*$/i.test(x.textContent || ''));
+      return a ? a.href : null;
+    });
+    if (cashLink) {
+      console.log('Thấy link Sổ quỹ → ' + hideShop(cashLink));
+      await page.goto(cashLink, { waitUntil: 'networkidle', timeout: 45000 }).catch(() => { });
+      await page.waitForTimeout(3000);
+      opened = await isCashPage();
     }
+    /* b) không thấy thì thử vài đường dẫn quen của KiotViet */
     if (!opened) {
-      const base = new URL(page.url());
-      for (const h of ['#/CashFlow', '#/CashBook', '#/cashflow', '#/Cashbook']) {
-        await page.goto(base.origin + base.pathname + h, { waitUntil: 'networkidle', timeout: 30000 }).catch(() => { });
+      const root = page.url().split('#')[0].replace(/\/p\/[^/]+$/, '');
+      for (const tail of ['/p/cashflow', '/p/CashFlow', '/p/cashbook', '/p/transaction#/CashFlow', '#/CashFlow']) {
+        await page.goto(root + tail, { waitUntil: 'networkidle', timeout: 30000 }).catch(() => { });
         await page.waitForTimeout(2500);
-        if (calls.length > before) { opened = true; break; }
+        if (await isCashPage()) { opened = true; break; }
       }
     }
     await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => { });
     await page.waitForTimeout(4000);
+    console.log('Trang hiện tại: ' + hideShop(scrubUrl(page.url())) + ' · tiêu đề: ' + (await page.title().catch(() => '')));
     await shot(page, 'so-quy');
     report.cashCalls = calls.slice(before).map((c, i) => before + i);
     report.ok = opened;
-    if (!opened) report.error = 'Không mở được trang Sổ quỹ — xem menu trong report để tìm đường dẫn đúng';
+    if (!opened) report.error = 'Không mở được trang Sổ quỹ — xem MENU trong log để tìm đường dẫn đúng';
+
+    /* 4. In chi tiết các request của trang Sổ quỹ: tên header (không có giá trị) + 1 dòng mẫu */
+    console.log('\n===== REQUEST CỦA TRANG SỔ QUỸ =====');
+    calls.slice(before)
+      .filter(c => /kiotviet\.vn/.test(c.url) && !/analytics|sentry|apm\.|feature-management|freshchat|ktarget|portal-kma|trackjs/.test(c.url))
+      .forEach(c => {
+        console.log('\n' + c.method + ' ' + c.status + ' ' + hideShop(c.url));
+        console.log('  header: ' + Object.keys(c.reqHeaders).join(', '));
+        if (c.postData) console.log('  body gửi: ' + hideShop(JSON.stringify(c.postData)).slice(0, 600));
+        if (c.body) console.log('  trả về: ' + hideShop(JSON.stringify(c.body)).slice(0, 2500));
+      });
   } catch (e) {
     report.error = scrub(e.message);
     console.log('::error::' + report.error);
@@ -196,6 +225,7 @@ async function fillBy(page, re, value, label) {
     console.log('Kết quả: ' + (report.ok ? 'mở được Sổ quỹ' : 'CHƯA mở được Sổ quỹ') + (report.error ? ' · ' + report.error : ''));
     console.log('Các request API (' + calls.length + '):');
     calls.forEach((c, i) => {
+      if (/google|analytics|sentry|apm\.|trackjs|freshchat|ktarget|feature-management/.test(c.url)) return;
       const keys = c.body && typeof c.body === 'object' ? Object.keys(c.body).slice(0, 12).join(',') : '';
       console.log(String(i).padStart(3) + ' ' + c.method + ' ' + c.status + ' ' + c.url + (keys ? '  {' + keys + '}' : ''));
     });
