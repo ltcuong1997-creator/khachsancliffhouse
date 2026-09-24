@@ -191,15 +191,7 @@ async function fillBy(page, re, value, label) {
       await page.waitForTimeout(3000);
       opened = await isCashPage();
     }
-    /* b) không thấy thì thử vài đường dẫn quen của KiotViet */
-    if (!opened) {
-      const root = page.url().split('#')[0].replace(/\/p\/[^/]+$/, '');
-      for (const tail of ['/p/cashflow', '/p/CashFlow', '/p/cashbook', '/p/transaction#/CashFlow', '#/CashFlow']) {
-        await page.goto(root + tail, { waitUntil: 'networkidle', timeout: 30000 }).catch(() => { });
-        await page.waitForTimeout(2500);
-        if (await isCashPage()) { opened = true; break; }
-      }
-    }
+    /* b) Không cần mở được trang giao diện: robot gọi thẳng API /api/cashflow ở bước 4 */
     await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => { });
     await page.waitForTimeout(4000);
     report.nav.push('Trang cuối: ' + hideShop(scrubUrl(page.url())) + ' · tiêu đề: ' + (await page.title().catch(() => '')));
@@ -208,53 +200,47 @@ async function fillBy(page, re, value, label) {
     report.ok = opened;
     if (!opened) report.error = 'Không mở được trang Sổ quỹ — xem MENU trong log để tìm đường dẫn đúng';
 
-    /* 4. Gọi thử vài địa chỉ API sổ quỹ quen của KiotViet — CHỈ GET, dùng lại header của phiên đăng nhập.
-       Chỉ ghi mã trả về + tên trường + 1 dòng mẫu. */
+    /* 4. Gọi thử API sổ quỹ /api/cashflow — CHỈ GET, dùng lại header của phiên đăng nhập.
+       Lần 3 đã tìm ra API; lần này thử cách lọc theo ngày + phân trang.
+       Mỗi kiểu lọc in: Total, số dòng, ngày nhỏ nhất/lớn nhất trong kết quả. */
     report.probes = [];
     if (liveHeaders) {
       const h = { ...liveHeaders };
       ['content-length', 'baggage', 'sentry-trace'].forEach(k => delete h[k]);
-      const filt = encodeURIComponent(JSON.stringify({ StartDate: '2026-09-01T00:00:00+07:00', EndDate: '2026-09-03T00:00:00+07:00', TimeRange: 'O' }));
-      const odata = encodeURIComponent("(TransDate ge datetime'2026-09-01T00:00:00' and TransDate lt datetime'2026-09-03T00:00:00')");
+      const d1 = "datetime'2026-09-01T00:00:00'", d2 = "datetime'2026-09-03T00:00:00'";
+      const enc = encodeURIComponent;
+      const base = '/api/cashflow?format=json&%24inlinecount=allpages&%24top=100';
       const cands = [
-        '/api/cashflow?format=json&Includes=User&%24inlinecount=allpages&%24top=5',
-        '/api/cashflow?format=json&%24inlinecount=allpages&%24top=5&%24filter=' + odata,
-        '/api/cashflows?format=json&%24top=5',
-        '/api/cashflow/getlist?format=json&Filter=' + filt,
-        '/api/cashflow/list?format=json&Filter=' + filt,
-        '/api/cashbook?format=json&%24top=5',
-        '/api/cashflowgroup?format=json',
-        '/api/cashflow/groups?format=json',
+        ['không lọc', base],
+        ['lọc TransDate', base + '&%24filter=' + enc(`TransDate ge ${d1} and TransDate lt ${d2}`)],
+        ['lọc TransDate + Branch', base + '&%24filter=' + enc(`(BranchId eq 262 and TransDate ge ${d1} and TransDate lt ${d2})`)],
+        ['lọc + Status', base + '&%24filter=' + enc(`(BranchId eq 262 and TransDate ge ${d1} and TransDate lt ${d2} and (Status eq 0))`)],
+        ['lọc + UsingTotalApi', base + '&ForSummaryRow=true&UsingTotalApi=true&%24filter=' + enc(`(BranchId eq 262 and TransDate ge ${d1} and TransDate lt ${d2})`)],
+        ['lọc + Status + orderby', base + '&%24orderby=TransDate&%24filter=' + enc(`(BranchId eq 262 and TransDate ge ${d1} and TransDate lt ${d2} and (Status eq 0))`)],
+        ['trang 2 (skip 100)', base + '&%24skip=100'],
       ];
-      for (const u of cands) {
+      for (const [label, u] of cands) {
         let status = 0, info = '';
         try {
-          const r = await ctx.request.get('https://hotel.kiotviet.vn' + u, { headers: h, timeout: 20000 });
+          const r = await ctx.request.get('https://hotel.kiotviet.vn' + u, { headers: h, timeout: 30000 });
           status = r.status();
-          const txt = await r.text();
-          try {
-            const j = JSON.parse(txt);
-            const list = Array.isArray(j) ? j : (j.Data || j.data || j.Result || j.result || j.Items || null);
-            info = 'trường: ' + (Array.isArray(j) ? '[mảng ' + j.length + ']' : Object.keys(j).slice(0, 15).join(','));
-            if (j.Total != null || j.total != null) info += ' · Total=' + (j.Total ?? j.total);
-            if (Array.isArray(list) && list.length) info += '\n      mẫu: ' + JSON.stringify(shape(list[0])).slice(0, 1500);
-          } catch (e) { info = 'không phải JSON: ' + scrub(txt).slice(0, 120).replace(/\s+/g, ' '); }
+          const j = await r.json().catch(() => null);
+          if (j && Array.isArray(j.Data)) {
+            const ds = j.Data.map(x => String(x.TransDate || '')).filter(Boolean).sort();
+            info = 'Total=' + j.Total + ' · dòng=' + j.Data.length + ' · ngày ' + (ds[0] || '-').slice(0, 16) + ' → ' + (ds[ds.length - 1] || '-').slice(0, 16)
+              + ' · Total1..4=' + [j.Total1Value, j.Total2Value, j.Total3Value, j.Total4Value].join('/')
+              + ' · trạng thái=' + Array.from(new Set(j.Data.map(x => x.Status + ':' + x.StatusValue))).join(',');
+            const thu = j.Data.find(x => x.Amount > 0);
+            if (label === 'không lọc' && thu) info += '\n      mẫu phiếu thu: ' + JSON.stringify(shape(thu)).slice(0, 1200);
+          } else info = 'trường: ' + (j ? Object.keys(j).join(',') : '(không phải JSON)');
         } catch (e) { info = 'lỗi: ' + scrub(e.message).slice(0, 120); }
-        report.probes.push({ url: u.slice(0, 160), status, info });
+        report.probes.push({ url: label, status, info });
       }
+      report.ok = report.probes.some(p => p.status === 200);
+      report.error = report.ok ? null : 'Không gọi được API sổ quỹ';
     } else {
       report.probes.push({ url: '-', status: 0, info: 'không bắt được header đăng nhập' });
     }
-    /* 4. In chi tiết các request của trang Sổ quỹ: tên header (không có giá trị) + 1 dòng mẫu */
-    console.log('\n===== REQUEST CỦA TRANG SỔ QUỸ =====');
-    calls.slice(before)
-      .filter(c => /kiotviet\.vn/.test(c.url) && !/analytics|sentry|apm\.|feature-management|freshchat|ktarget|portal-kma|trackjs/.test(c.url))
-      .forEach(c => {
-        console.log('\n' + c.method + ' ' + c.status + ' ' + hideShop(c.url));
-        console.log('  header: ' + Object.keys(c.reqHeaders).join(', '));
-        if (c.postData) console.log('  body gửi: ' + hideShop(JSON.stringify(c.postData)).slice(0, 600));
-        if (c.body) console.log('  trả về: ' + hideShop(JSON.stringify(c.body)).slice(0, 2500));
-      });
   } catch (e) {
     report.error = scrub(e.message);
     console.log('::error::' + report.error);
@@ -263,7 +249,7 @@ async function fillBy(page, re, value, label) {
     fs.writeFileSync(path.join(OUT, 'report.json'), JSON.stringify(report, null, 2));
     /* Tóm tắt ra log để đọc nhanh — không có dữ liệu tiền, chỉ có đường dẫn và tên trường */
     console.log('\n===== TÓM TẮT =====');
-    console.log('Kết quả: ' + (report.ok ? 'mở được Sổ quỹ' : 'CHƯA mở được Sổ quỹ') + (report.error ? ' · ' + report.error : ''));
+    console.log('Kết quả: ' + (report.ok ? 'gọi được API sổ quỹ' : 'CHƯA lấy được sổ quỹ') + (report.error ? ' · ' + report.error : ''));
     const seen = new Set();
     console.log('Request API khác trang Tổng quan:');
     calls.forEach(c => {
