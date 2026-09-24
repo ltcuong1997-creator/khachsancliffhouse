@@ -350,6 +350,38 @@ table.pnl tfoot tr.margin td{font-size:12px;color:var(--txt-3);border-bottom:non
   .ps-cal .c.we,.ps-tb tr.net td{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 
+/* ================= LỊCH THU CHI ================= */
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.cal-h{font-size:11px;font-weight:700;color:var(--txt-3);text-align:center;padding-bottom:2px;letter-spacing:.04em}
+.cal-d{min-height:92px;border-radius:12px;background:var(--canvas);padding:7px 8px;text-align:left;
+  display:flex;flex-direction:column;gap:1px;font-variant-numeric:tabular-nums;transition:box-shadow .18s,background .18s;min-width:0}
+.cal-d .n{font-size:12px;font-weight:700;color:var(--txt-2);margin-bottom:3px}
+.cal-d .in{font-size:13px;font-weight:700;color:var(--green);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-d .out{font-size:13px;font-weight:700;color:var(--red);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-d .c{font-size:10.5px;color:var(--txt-3);margin-top:auto}
+.cal-d.has{background:#fff;box-shadow:var(--sh-1);cursor:pointer}
+.cal-d.has:hover{box-shadow:var(--sh-up)}
+.cal-d.we .n{color:var(--brand-dark)}
+.cal-d.today{outline:2px solid var(--brand);outline-offset:-2px}
+.cal-d.future{background:none;border:1px dashed var(--line)}
+.cal-d.missing{background:repeating-linear-gradient(135deg,var(--canvas) 0 7px,#EFEBE8 7px 9px)}
+.cal-d:disabled{cursor:default}
+.cal-d i{font-style:normal}
+.cal-d .tiny{display:none}
+.cal-tot{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:baseline;margin-top:14px;padding-top:12px;
+  border-top:1px solid var(--line-soft);font-size:13px;color:var(--txt-3);font-variant-numeric:tabular-nums}
+.cal-tot .in{color:var(--green);font-size:15px}
+.cal-tot .out{color:var(--red);font-size:15px}
+@media(max-width:640px){
+  .cal{gap:3px}
+  .cal-d{min-height:66px;padding:4px 4px;border-radius:8px}
+  .cal-d .n{font-size:10.5px;margin-bottom:1px}
+  .cal-d .in,.cal-d .out{font-size:10px}
+  .cal-d .c{display:none}
+  .cal-d .full{display:none}
+  .cal-d .tiny{display:inline}
+}
+
 /* ================= BIỂU ĐỒ ================= */
 .chart-wrap{padding:8px 18px 18px}
 .bar-row{display:flex;align-items:center;gap:12px;padding:6px 0;border-radius:9px;transition:background .16s}
@@ -662,6 +694,7 @@ const Ic = {
   arrowD: mkIc(<><path d="M12 5v14M6 13l6 6 6-6" /></>),
   panel: mkIc(<><rect x="3" y="4" width="18" height="16" rx="2.5" /><path d="M9.5 4v16" /></>),
   chev: mkIc(<><path d="M9 5l7 7-7 7" /></>),
+  cal: mkIc(<><rect x="3.5" y="5" width="17" height="15" rx="2.5" /><path d="M3.5 10h17M8 3v4M16 3v4" /></>),
 };
 
 /* =====================================================================
@@ -3021,13 +3054,7 @@ function ImportModal({ onClose }) {
 /* Robot kéo sổ quỹ chạy trên GitHub Actions (robot/soquy/) và ghi nhịp tim vào ch_config/robot.
    Thẻ này chỉ đọc nhịp tim đó: lần chạy gần nhất, được hay lỗi, tổng có khớp KiotViet không. */
 function RobotCard({ beat }) {
-  const ago = (iso) => {
-    const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
-    if (m < 1) return 'vừa xong';
-    if (m < 60) return m + ' phút trước';
-    if (m < 60 * 24) return Math.round(m / 60) + ' giờ trước';
-    return Math.round(m / 1440) + ' ngày trước';
-  };
+  const ago = agoText;
   /* Robot chạy mỗi giờ 7h–23h: quá 3 tiếng không thấy nhịp tim là có chuyện */
   const stale = beat && beat.at && (Date.now() - new Date(beat.at).getTime()) > 3 * 3600e3;
   const tone = !beat ? 't-gray' : !beat.ok ? 't-red' : (stale || (beat.warn || []).length) ? 't-amber' : 't-green';
@@ -3071,6 +3098,145 @@ function RobotCard({ beat }) {
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+/* Ô lịch trên điện thoại chỉ rộng ~48px: số triệu một số lẻ, bỏ chữ "tr" (dưới 1 triệu thì ghi k) */
+const tiny = (v) => (v >= 1e6 ? (v / 1e6).toFixed(1).replace('.', ',') : Math.round(v / 1e3) + 'k');
+/* "25 phút trước" — dùng cho nhịp tim robot */
+const agoText = (iso) => {
+  const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (m < 1) return 'vừa xong';
+  if (m < 60) return m + ' phút trước';
+  if (m < 60 * 24) return Math.round(m / 60) + ' giờ trước';
+  return Math.round(m / 1440) + ' ngày trước';
+};
+
+/* ---- TRANG DỮ LIỆU ----
+   Hai câu hỏi: sổ quỹ đã có tới ngày nào, và từng ngày thu/chi bao nhiêu.
+   Số ở đây là số THÔ của sổ quỹ (mọi phiếu, kể cả tạm ứng và phiếu chi lương) — đúng như
+   KiotViet, để đối chiếu. Báo cáo lãi lỗ mới là nơi trừ/loại các khoản đó. */
+function DataPage() {
+  const { db } = useApp();
+  const cash = db.cash || [];
+  const { first, last } = useMemo(() => {
+    let a = '', b = '';
+    cash.forEach(r => { const d = String(r.date); if (!a || d < a) a = d; if (!b || d > b) b = d; });
+    return { first: a, last: b };
+  }, [cash]);
+  const [mk, setMk] = useState(() => (last ? last.slice(0, 7) : thisMonth()));
+  const [day, setDay] = useState(null);
+  const { y, m } = mParse(mk);
+  const dim = daysIn(y, m);
+  const lead = (dowOf(y, m, 1) + 6) % 7;   /* lịch bắt đầu từ thứ Hai */
+  const today = todayKey();
+
+  const byDay = useMemo(() => {
+    const o = {};
+    rowsOfMonth(db, mk).forEach(r => {
+      const x = o[r.date] || (o[r.date] = { thu: 0, chi: 0, n: 0, rows: [] });
+      x[r.type === 'thu' ? 'thu' : 'chi'] += r.amount; x.n++; x.rows.push(r);
+    });
+    return o;
+  }, [db, mk]);
+  const tot = Object.values(byDay).reduce((a, x) => ({ thu: a.thu + x.thu, chi: a.chi + x.chi, n: a.n + x.n }), { thu: 0, chi: 0, n: 0 });
+  const daysWithData = Object.keys(byDay).length;
+  const gap = last ? Math.round((new Date(today) - new Date(last)) / 864e5) : null;
+  const beat = db.robot;
+
+  /* Các tháng đang có dữ liệu — hiện thành hàng chip để nhảy nhanh */
+  const months = useMemo(() => {
+    const c = {};
+    cash.forEach(r => { const k = String(r.date).slice(0, 7); c[k] = (c[k] || 0) + 1; });
+    return Object.keys(c).sort().reverse().map(k => ({ k, n: c[k] }));
+  }, [cash]);
+
+  const dayRows = day && byDay[day] ? byDay[day].rows.slice().sort((a, b) => (a.type === b.type ? b.amount - a.amount : a.type === 'thu' ? -1 : 1)) : [];
+
+  return (
+    <div>
+      <div className="stats">
+        <Stat hero label="Sổ quỹ có dữ liệu đến" value={last ? dFull(last) : '—'} icon={<span>📅</span>}
+          sub={last ? (gap <= 0 ? 'tới hôm nay' : 'trễ ' + gap + ' ngày so với hôm nay') + ' · từ ' + dFull(first) : 'chưa có phiếu nào'} />
+        <Stat label="Robot nạp gần nhất" value={beat && beat.at ? agoText(beat.at) : '—'} icon={<span>🤖</span>}
+          tone={!beat ? '' : beat.ok ? 'green' : 'red'}
+          sub={!beat ? 'chưa chạy lần nào' : beat.ok ? beat.rows + ' phiếu · đến ' + dFull(beat.to) : 'lỗi: ' + String(beat.error || '').slice(0, 60)} />
+        <Stat label={'Thu ' + mLabel(mk).toLowerCase()} value={money(tot.thu)} icon={<span>💰</span>} tone="green" sub={tot.n + ' phiếu · ' + daysWithData + ' ngày có phiếu'} />
+        <Stat label={'Chi ' + mLabel(mk).toLowerCase()} value={money(tot.chi)} icon={<span>💸</span>} tone="red" sub="số thô của sổ quỹ" />
+      </div>
+
+      <div className="card">
+        <div className="card-h">
+          <div><h3>Thu chi theo ngày</h3><p>Bấm vào một ngày để xem từng phiếu · ô gạch chéo là ngày chưa có dữ liệu</p></div>
+          <div className="sp"><MonthPick value={mk} onChange={(v) => { setMk(v); setDay(null); }} min={first ? first.slice(0, 7) : undefined} /></div>
+        </div>
+        <div className="card-b">
+          <div className="cal">
+            {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map(d => <div key={d} className="cal-h">{d}</div>)}
+            {Array.from({ length: lead }, (_, i) => <div key={'p' + i} />)}
+            {Array.from({ length: dim }, (_, i) => {
+              const d = i + 1, key = mk + '-' + pad2(d), x = byDay[key];
+              const future = key > today && !x, missing = !x && !future && (!last || key > last);
+              return (
+                <button key={d} disabled={!x}
+                  className={cls('cal-d', x && 'has', future && 'future', missing && 'missing', key === today && 'today', isWeekend(y, m, d) && 'we')}
+                  onClick={() => setDay(key)}>
+                  <span className="n">{d}</span>
+                  {x ? (
+                    <>
+                      <span className="in">{x.thu ? <><i className="full">+{short(x.thu)}</i><i className="tiny">+{tiny(x.thu)}</i></> : ''}</span>
+                      <span className="out">{x.chi ? <><i className="full">−{short(x.chi)}</i><i className="tiny">−{tiny(x.chi)}</i></> : ''}</span>
+                      <span className="c">{x.n} phiếu</span>
+                    </>
+                  ) : <span className="c">{future ? '' : missing ? 'chưa có' : 'không phiếu'}</span>}
+                </button>
+              );
+            })}
+          </div>
+          <div className="cal-tot">
+            <span>Cả tháng:</span>
+            <b className="in">+{money(tot.thu)}</b>
+            <b className="out">−{money(tot.chi)}</b>
+            <span>chênh {money(tot.thu - tot.chi)} đ · {tot.n} phiếu</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-h"><div><h3>Các tháng đang có</h3><p>{cash.length} phiếu · bấm để xem lịch tháng đó</p></div></div>
+        <div className="card-b" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {months.map(o => (
+            <button key={o.k} className={cls('btn sm', o.k === mk && 'pri')} onClick={() => { setMk(o.k); setDay(null); }}>
+              {mLabel(o.k)} · {o.n}
+            </button>
+          ))}
+          {!months.length && <div className="hint">Chưa có dữ liệu sổ quỹ.</div>}
+        </div>
+      </div>
+
+      {day && byDay[day] && (
+        <Modal wide title={'Ngày ' + dFull(day)} onClose={() => setDay(null)}
+          sub={'Thu ' + moneyD(byDay[day].thu) + ' · Chi ' + moneyD(byDay[day].chi) + ' · ' + byDay[day].n + ' phiếu'}>
+          <div className="scroll-x">
+            <table className="tb">
+              <thead><tr><th>Mã phiếu</th><th>Loại</th><th>Nội dung</th><th className="r">Số tiền</th></tr></thead>
+              <tbody>
+                {dayRows.map(r => (
+                  <tr key={r.id}>
+                    <td className="mono" style={{ whiteSpace: 'nowrap' }}>{r.code || '—'}</td>
+                    <td><span className={'tag ' + (r.type === 'thu' ? 't-green' : 't-red')}>{r.type === 'thu' ? 'Thu' : 'Chi'}</span> <span className="hint">{r.cat}</span></td>
+                    <td>{r.note}</td>
+                    <td className="r mono" style={{ color: r.type === 'thu' ? 'var(--green)' : 'var(--red)', fontWeight: 600 }}>
+                      {(r.type === 'thu' ? '+' : '−') + money(r.amount)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
@@ -3230,6 +3396,7 @@ const PAGES = [
   { k: 'report', l: 'Báo cáo tổng hợp', s: 'Báo cáo', ic: Ic.gauge, g: 'Báo cáo', t: ['Báo cáo tổng hợp', 'Lãi lỗ theo tháng từ sổ quỹ KiotViet'], C: ReportPage },
   { k: 'expense', l: 'Chi tiết chi phí', s: 'Chi phí', ic: Ic.pie, g: 'Báo cáo', t: ['Chi tiết chi phí', 'Tiền chảy đi đâu, khoản nào bất thường'], C: ExpensePage },
   { k: 'pnl', l: 'P&L theo năm', s: 'P&L', ic: Ic.chart, g: 'Báo cáo', t: ['Báo cáo P&L', 'Doanh thu, chi phí từng loại và lợi nhuận 12 tháng'], C: PnlPage },
+  { k: 'data', l: 'Dữ liệu sổ quỹ', s: 'Dữ liệu', ic: Ic.cal, g: 'Báo cáo', t: ['Dữ liệu sổ quỹ', 'Đã có tới ngày nào, và thu chi từng ngày trên lịch'], C: DataPage },
   { k: 'timesheet', l: 'Chấm công', s: 'Công', ic: Ic.clock, g: 'Nhân sự', t: ['Chấm công', 'Bảng giờ công theo ngày'], C: TimesheetPage },
   { k: 'payroll', l: 'Bảng lương', s: 'Lương', ic: Ic.wallet, g: 'Nhân sự', t: ['Bảng lương', 'Giờ công × đơn giá, trừ BHXH và tạm ứng, chuyển khoản bằng QR'], C: PayrollPage },
   { k: 'staff', l: 'Nhân viên', s: 'Nhân sự', ic: Ic.users, g: 'Nhân sự', t: ['Nhân viên', 'Hồ sơ và tài khoản nhận lương'], C: StaffPage },
