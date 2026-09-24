@@ -1,12 +1,9 @@
 # Khảo sát Sổ quỹ KiotViet Hotel — chạy MỘT LẦN để tìm API nội bộ, chưa ghi gì vào Firestore.
-# Tự chạy khi có code mới trong robot/soquy/ trên nhánh làm robot; chạy tay được sau khi merge vào main.
 # Cần secrets: KV_SHOP, KV_USER, KV_PASS. Thiếu thì lần chạy tự bỏ qua, không báo lỗi.
 name: Robot sổ quỹ — khảo sát
 
+# Đã khảo sát xong (tháng 9/2026) — giờ chỉ chạy tay khi KiotViet đổi giao diện/API.
 on:
-  push:
-    branches: [claude/wizardly-maxwell-kzbqiy]
-    paths: ['robot/soquy/**', '.github/workflows/robot-soquy-khaosat.yml']
   workflow_dispatch:
 
 concurrency:

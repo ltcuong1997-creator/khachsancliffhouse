@@ -57,23 +57,52 @@ firebase deploy --only firestore:rules
 
 ---
 
-## Nạp số liệu hằng tháng
+## Nạp số liệu: robot tự kéo từ KiotViet
 
-Gói KiotViet Hotel đang dùng **không mở API**, nên không tự đồng bộ được.
-Bù lại màn hình Sổ quỹ **xuất được Excel** — thế là đủ, và cách này không cần khoá,
-không cần mật khẩu, không gãy khi KiotViet đổi giao diện.
+Từ tháng 9/2026, **robot trên GitHub Actions tự kéo sổ quỹ** mỗi giờ từ 7h đến 23h và lúc 0h30
+(giờ VN), rồi ghi vào Firestore. Code ở `robot/soquy/`, lịch ở `.github/workflows/robot-soquy.yml`.
 
-1. KiotViet → **Sổ quỹ** → chọn khoảng thời gian là tháng cần nạp → **Xuất file**
+- **Chỉ đọc KiotViet.** Đăng nhập như người dùng rồi gọi API mà chính trang web KiotViet đang dùng.
+- Mỗi lần kéo lại **cả tháng hiện tại** (ngày 1–5 thì kéo thêm tháng trước), chỉ thay đúng các ngày
+  vừa kéo. Mỗi phiếu lấy mã phiếu KiotViet làm id → chạy lại bao nhiêu lần cũng không nhân đôi.
+- Phiếu **đã huỷ** bên KiotViet thì bị bỏ ra.
+- Không đụng tới dữ liệu **trước 9/2026** (dữ liệu nạp Excel cũ giữ nguyên).
+- Tự đối chiếu tổng thu/chi với con số KiotViet tự tính; lệch là báo ở trang **Cấu hình**.
+- Phiếu chi lương mà "Chốt đã chi lương" đang trỏ tới được nối lại tự động; không nối được thì
+  trang Cấu hình báo để mở chốt rồi chốt lại.
+
+### Cài một lần
+
+GitHub repo → **Settings → Secrets and variables → Actions → New repository secret**, đủ 4 cái:
+
+| Name | Secret |
+|---|---|
+| `KV_SHOP` | tên gian hàng KiotViet |
+| `KV_USER` | tên đăng nhập — nên là tài khoản nhân viên riêng, chỉ quyền xem Sổ quỹ |
+| `KV_PASS` | mật khẩu |
+| `FIREBASE_SERVICE_ACCOUNT` | toàn bộ nội dung file JSON service account (cùng cái dùng để deploy) |
+
+Rồi merge nhánh chứa robot vào `main`. **Lịch hẹn giờ của GitHub chỉ chạy trên nhánh `main`.**
+
+### Chạy tay / chạy thử / nạp bù
+
+Tab **Actions → Robot sổ quỹ → Run workflow**: điền **Từ ngày / Đến ngày** (bỏ trống = cả tháng
+này), tích **Chạy thử** nếu chỉ muốn xem kết quả mà không ghi. Log của lần chạy in ra số phiếu và
+bảng so với KiotViet của từng tháng.
+
+Chi phí: mỗi lần chạy khoảng 1,5 phút, 18 lần/ngày → **khoảng 800 phút/tháng**. Repo riêng tư được
+miễn phí 2.000 phút/tháng; repo công khai thì không tính.
+
+### Nạp tay bằng Excel (dự phòng)
+
+Khi robot lỗi, hoặc cần nạp tháng trước 9/2026:
+
+1. KiotViet → **Sổ quỹ** → chọn khoảng thời gian → **Xuất file**
 2. App → **Cấu hình → Nạp file sổ quỹ** → thả file vào
 
 Lần đầu app hỏi cột nào là ngày, cột nào là số tiền. Nó **tự đoán trước** rồi cho xem bảng
-trước khi lưu — nhìn thấy đúng thì bấm Nạp. Ghép một lần là nhớ luôn, lần sau thả file vào
-là chạy thẳng.
-
-**Nạp lại cùng một tháng thì đè lên, không nhân đôi số liệu.** Nên xuất bù, sửa phiếu bên
-KiotViet xong cứ nạp lại thoải mái — lần nạp sau luôn đúng.
-
-Nạp được cả nhiều tháng trong một file (xuất khoảng thời gian dài) — app tự tách theo tháng.
+trước khi lưu. Nạp lại cùng một tháng thì **đè lên**, không nhân đôi. Tháng nào robot đang kéo thì
+lần chạy kế tiếp của robot ghi đè lại theo KiotViet.
 
 ---
 
@@ -126,6 +155,7 @@ theo số document trả về, gom theo tháng thì mở app tốn 12 lượt đ
 | `ch_payroll` | `2026-08` | `rows{}` BHXH/tạm ứng/đã trả + `close{}` chốt lương |
 | `ch_employees` | mã nhân viên | hồ sơ, đơn giá giờ, tài khoản ngân hàng |
 | `ch_config` | `main` | cách ghép cột của file sổ quỹ |
+| `ch_config` | `robot` | nhịp tim robot: lần chạy gần nhất, OK/lỗi, đối chiếu từng tháng |
 | `ch_users` | UID | `name`, `role` — **chỉ sửa tay trong Console** |
 
 ## Thêm người dùng về sau

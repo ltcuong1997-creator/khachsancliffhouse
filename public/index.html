@@ -992,9 +992,10 @@ const authMsg = (e) => AUTH_ERR[(e && e.code)] || (e && e.message) || 'Lỗi kh�
    tốn thêm lượt đọc nào — rẻ hơn hẳn so với đọc lại theo từng màn hình. */
 async function cloudLoad() {
   const grab = (col) => FS.collection(col).get().catch(e => { console.warn(col, e.message); return { docs: [] }; });
-  const [emp, cash, ts, pay, cfg] = await Promise.all([
+  const [emp, cash, ts, pay, cfg, robot] = await Promise.all([
     grab(COL.emp), grab(COL.cash), grab(COL.ts), grab(COL.pay),
     FS.collection(COL.cfg).doc('main').get().catch(() => null),
+    FS.collection(COL.cfg).doc('robot').get().catch(() => null),
   ]);
   const out = { cash: [], employees: [], timesheet: {}, tsNames: {}, payroll: {}, closes: {}, cfg: {} };
   emp.docs.forEach(d => out.employees.push({ ...d.data(), id: d.id }));
@@ -1006,6 +1007,8 @@ async function cloudLoad() {
     if (v.close) out.closes[d.id] = v.close;
   });
   if (cfg && cfg.exists) out.cfg = cfg.data() || {};
+  /* Nhịp tim của robot kéo sổ quỹ (GitHub Actions ghi mỗi lần chạy) — chỉ đọc, app không bao giờ ghi */
+  if (robot && robot.exists) out.robot = robot.data() || null;
   /* Nhân viên xếp theo tên cho mọi bảng đều cùng một thứ tự, không phụ thuộc thứ tự Firestore trả về */
   out.employees.sort((a, b) => noAccent(a.name || '').localeCompare(noAccent(b.name || ''), 'vi'));
   return out;
@@ -3015,6 +3018,63 @@ function ImportModal({ onClose }) {
 }
 
 /* ===================== TRANG 7 — CẤU HÌNH ===================== */
+/* Robot kéo sổ quỹ chạy trên GitHub Actions (robot/soquy/) và ghi nhịp tim vào ch_config/robot.
+   Thẻ này chỉ đọc nhịp tim đó: lần chạy gần nhất, được hay lỗi, tổng có khớp KiotViet không. */
+function RobotCard({ beat }) {
+  const ago = (iso) => {
+    const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+    if (m < 1) return 'vừa xong';
+    if (m < 60) return m + ' phút trước';
+    if (m < 60 * 24) return Math.round(m / 60) + ' giờ trước';
+    return Math.round(m / 1440) + ' ngày trước';
+  };
+  /* Robot chạy mỗi giờ 7h–23h: quá 3 tiếng không thấy nhịp tim là có chuyện */
+  const stale = beat && beat.at && (Date.now() - new Date(beat.at).getTime()) > 3 * 3600e3;
+  const tone = !beat ? 't-gray' : !beat.ok ? 't-red' : (stale || (beat.warn || []).length) ? 't-amber' : 't-green';
+  const label = !beat ? 'chưa chạy' : !beat.ok ? 'lỗi' : stale ? 'lâu không chạy' : (beat.warn || []).length ? 'có cảnh báo' : 'bình thường';
+  const months = Object.entries((beat && beat.months) || {}).sort();
+  return (
+    <div className="card">
+      <div className="card-h">
+        <div><h3>Robot tự nạp sổ quỹ</h3><p>Kéo từ KiotViet mỗi giờ 7h–23h và lúc 0h30 · chạy trên GitHub</p></div>
+        <div className="sp"><span className={'tag ' + tone}>{label}</span></div>
+      </div>
+      <div className="card-b">
+        {!beat ? (
+          <div className="hint">Robot chưa ghi lần chạy nào. Nó chỉ chạy theo lịch sau khi code đã nằm trên nhánh <b>main</b> và đủ 4 secrets (xem SETUP.md).</div>
+        ) : (
+          <>
+            <div style={{ fontSize: 13.5, lineHeight: 1.8 }}>
+              Lần chạy gần nhất: <b>{ago(beat.at)}</b> ({new Date(beat.at).toLocaleString('vi-VN')})
+              {beat.ok ? <> · kéo <b>{beat.rows}</b> phiếu từ {dFull(beat.from)} đến {dFull(beat.to)}</> : null}
+              {beat.run ? <> · <a href={beat.run} target="_blank" rel="noopener" style={{ color: 'var(--brand-dark)', fontWeight: 600 }}>xem chi tiết</a></> : null}
+            </div>
+            {beat.error && <div className="err" style={{ marginTop: 10 }}>{beat.error}</div>}
+            {months.length > 0 && (
+              <table className="tb" style={{ marginTop: 10 }}>
+                <thead><tr><th>Tháng</th><th className="r">Phiếu</th><th className="r">Thu</th><th className="r">Chi</th><th>So với KiotViet</th></tr></thead>
+                <tbody>
+                  {months.map(([mk, m]) => (
+                    <tr key={mk}>
+                      <td>{mLabel(mk)}</td>
+                      <td className="r mono">{m.n}</td>
+                      <td className="r mono">{money(m.thu)}</td>
+                      <td className="r mono">{money(m.chi)}</td>
+                      <td>{m.match ? <span className="tag t-green">khớp</span>
+                        : <span className="tag t-amber" title={'KiotViet: thu ' + money(m.kvThu) + ' · chi ' + money(m.kvChi)}>lệch</span>}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            {(beat.warn || []).map((w, i) => <div key={i} className="banner" style={{ marginTop: 10, marginBottom: 0 }}><Ic.warn size={15} /><div>{w}</div></div>)}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function SettingsPage() {
   const { db, saveCfg, resetDemo, seedCloud, wipeCloud, reload, toast, user } = useApp();
   const [busy, setBusy] = useState('');
@@ -3047,9 +3107,11 @@ function SettingsPage() {
         </div>
       )}
 
+      <RobotCard beat={db.robot} />
+
       <div className="card">
         <div className="card-h">
-          <div><h3>Nạp sổ quỹ hằng tháng</h3><p>Xuất Excel từ KiotViet rồi thả vào đây — mỗi tháng một lần</p></div>
+          <div><h3>Nạp tay bằng file Excel</h3><p>Dự phòng khi robot lỗi, hoặc để nạp các tháng trước 9/2026</p></div>
           <div className="sp"><button className="btn pri" onClick={() => setImp(true)}><Ic.down size={15} /> Nạp file sổ quỹ</button></div>
         </div>
         <div className="card-b">
@@ -3059,8 +3121,8 @@ function SettingsPage() {
             <li>Quay lại đây, bấm <b>Nạp file sổ quỹ</b> và thả file vào</li>
           </ol>
           <div className="hint" style={{ marginTop: 12 }}>
-            Gói KiotViet Hotel đang dùng không mở API nên không tự đồng bộ được — bù lại cách này
-            không cần khoá, không cần mật khẩu, và không gãy khi KiotViet đổi giao diện.
+            Từ tháng 9/2026 robot tự nạp mỗi giờ, thường không cần làm tay. Nạp tay một tháng mà robot
+            cũng đang kéo thì lần chạy kế tiếp của robot sẽ ghi đè lại theo KiotViet.
             Lần đầu app hỏi cột nào là ngày, cột nào là số tiền; ghép một lần rồi nhớ luôn.
             Nạp lại cùng một tháng thì <b>đè lên</b>, không nhân đôi số liệu.
           </div>
