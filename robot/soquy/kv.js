@@ -35,16 +35,21 @@ async function fillBy(page, filled, re, value) {
 
 /* Đăng nhập, trả về { headers, branchId } để gọi API. Header chỉ nằm trong bộ nhớ. */
 async function login(ctx, page, { shop, user, pass }) {
-  let headers = null, branchId = null;
+  /* Chỉ lấy header SAU KHI salelogin trả về thành công: trang đăng nhập tự gọi API mang sẵn một
+     header authorization "khách" từ trước khi đăng nhập — bắt nhầm cái đó là robot tưởng đã vào. */
+  let headers = null, branchId = null, loggedIn = false;
   page.on('request', req => {
-    if (!headers && req.url().startsWith(BASE + '/api/') && req.headers().authorization) {
+    if (loggedIn && !headers && req.url().startsWith(BASE + '/api/') && String(req.headers().authorization || '').length > 20) {
       headers = { ...req.headers() };
       ['content-length', 'baggage', 'sentry-trace'].forEach(k => delete headers[k]);
     }
   });
   page.on('response', async res => {
     if (/\/api\/auth\/salelogin/.test(res.url())) {
-      try { branchId = (await res.json()).BranchId; } catch (e) { }
+      try {
+        const j = await res.json();
+        if (res.status() === 200 && j.BearerToken) { branchId = j.BranchId; loggedIn = true; }
+      } catch (e) { }
     }
   });
 
@@ -57,9 +62,10 @@ async function login(ctx, page, { shop, user, pass }) {
   const btn = page.locator('button:visible, input[type=submit]:visible, a:visible')
     .filter({ hasText: /^\s*(Quản lý|Đăng nhập)\s*$/i }).first();
   if (await btn.count()) await btn.click(); else await page.keyboard.press('Enter');
-  await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => { });
 
-  /* Trang Tổng quan tự gọi API ngay sau đăng nhập — chờ bắt được header */
+  /* Chờ rời trang đăng nhập, rồi chờ trang Tổng quan tự gọi API để bắt header của phiên */
+  await page.waitForURL(u => !/\/login/i.test(String(u)), { timeout: 60000 }).catch(() => { });
+  await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => { });
   for (let i = 0; i < 30 && !headers; i++) await page.waitForTimeout(1000);
   if (/\/login/i.test(page.url())) throw new Error('Đăng nhập KiotViet thất bại — sai tài khoản/mật khẩu hoặc bị hỏi thêm bước xác minh');
   if (!headers) throw new Error('Đăng nhập được nhưng không bắt được phiên làm việc (không thấy header authorization)');
