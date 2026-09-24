@@ -1,0 +1,11 @@
+{
+  "name": "robot-soquy",
+  "private": true,
+  "description": "Robot kéo Sổ quỹ KiotViet Hotel về Firestore — chạy trên GitHub Actions",
+  "scripts": {
+    "survey": "node survey.js"
+  },
+  "dependencies": {
+    "playwright": "1.56.0"
+  }
+}

@@ -1,0 +1,43 @@
+# Khảo sát Sổ quỹ KiotViet Hotel — chạy MỘT LẦN để tìm API nội bộ, chưa ghi gì vào Firestore.
+# Tự chạy khi có code mới trong robot/soquy/ trên nhánh làm robot; chạy tay được sau khi merge vào main.
+# Cần secrets: KV_SHOP, KV_USER, KV_PASS. Thiếu thì lần chạy tự bỏ qua, không báo lỗi.
+name: Robot sổ quỹ — khảo sát
+
+on:
+  push:
+    branches: [claude/wizardly-maxwell-kzbqiy]
+    paths: ['robot/soquy/**', '.github/workflows/robot-soquy-khaosat.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: robot-soquy
+  cancel-in-progress: false
+
+jobs:
+  survey:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: robot/soquy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Khảo sát
+        env:
+          KV_SHOP: ${{ secrets.KV_SHOP }}
+          KV_USER: ${{ secrets.KV_USER }}
+          KV_PASS: ${{ secrets.KV_PASS }}
+        run: node survey.js
+      - name: Đính kèm ảnh chụp + report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: khao-sat-so-quy
+          path: robot/soquy/out/
+          if-no-files-found: ignore
+          retention-days: 7
