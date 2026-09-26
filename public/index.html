@@ -1214,6 +1214,10 @@ const advanceRows = (db, mk, emp) => {
 };
 const autoAdvance = (db, mk, emp) => advanceRows(db, mk, emp).reduce((a, b) => a + b.amount, 0);
 
+/* Bảng lương xếp lương cao xuống thấp. Xếp theo lương công/PC (không theo thực nhận) để các dòng
+   không nhảy chỗ trong lúc đang gõ BHXH / tạm ứng. */
+const byPay = (a, b) => (b.base + b.bonus) - (a.base + a.bonus) || noAccent(a.emp.name).localeCompare(noAccent(b.emp.name));
+
 /* Một dòng bảng lương.
    BHXH, thuế TNCN, tạm ứng, thưởng: chủ tự điền tay (ch_payroll/<tháng>.rows[id]).
    Tạm ứng KHÔNG tự lấy từ sổ quỹ nữa — số sổ quỹ chỉ hiện làm gợi ý (advanceAuto). */
@@ -2019,7 +2023,8 @@ function PayTable({ mk }) {
   const locked = monthStats(db, mk).closed;
   const rows = (db.employees || [])
     .filter(e => paidThisMonth(db, mk, e) || e.status === 'active')
-    .map(e => payRow(db, mk, e));
+    .map(e => payRow(db, mk, e))
+    .sort(byPay);
   const tot = rows.reduce((a, r) => {
     ['hours', 'gross', 'base', 'days', 'meal', 'bhxh', 'tncn', 'advance', 'bonus', 'net'].forEach(k => { a[k] = (a[k] || 0) + (r[k] || 0); });
     a.bhxhBase = (a.bhxhBase || 0) + n0(r.emp.bhxhBase);
@@ -2154,9 +2159,10 @@ function TimesheetPage() {
   const seePay = !user || user.role !== 'acct';
   const cells = (db.timesheet || {})[mk] || {};
   /* Có quyền đọc hồ sơ nhân viên thì lấy từ đó; không có (kế toán) thì lấy tên đã lưu kèm
-     trong chính bảng công của tháng — bảng vẫn chấm được bình thường. */
+     trong chính bảng công của tháng — bảng vẫn chấm được bình thường.
+     Người lương cố định không chấm công theo ngày nên không hiện ở đây (vẫn có trong bảng lương bên dưới). */
   const emps = (db.employees || []).length
-    ? (db.employees || []).filter(e => e.status === 'active' || hoursOf(db, mk, e.id) > 0)
+    ? (db.employees || []).filter(e => hoursOf(db, mk, e.id) > 0 || (e.status === 'active' && !isFixed(e)))
     : Object.keys(cells).map(id => ({ id, rate: 0, ...(((db.tsNames || {})[mk] || {})[id] || { name: id }) }));
   const days = Array.from({ length: dim }, (_, i) => i + 1);
   const narrow = useNarrow(960);
@@ -2575,7 +2581,8 @@ function PayrollPage() {
   const [slip, setSlip] = useState(null);
   const st = monthStats(db, mk);
   const rows = (db.employees || []).map(e => payRow(db, mk, e))
-    .filter(r => paidThisMonth(db, mk, r.emp) || r.bhxh || r.advance || r.tncn || r.bonus);
+    .filter(r => paidThisMonth(db, mk, r.emp) || r.bhxh || r.advance || r.tncn || r.bonus)
+    .sort(byPay);
   /* "Lương gộp" = phần công ty trả: lương công + phụ cấp trách nhiệm + thưởng */
   const tot = rows.reduce((a, r) => ({
     hours: a.hours + r.hours, gross: a.gross + r.base + r.bonus, bhxh: a.bhxh + r.bhxh + r.tncn,
