@@ -2409,9 +2409,9 @@ const saveBlob = (blob, name) => {
   setTimeout(() => URL.revokeObjectURL(a.href), 4000);
 };
 
-/* Dựng phiếu lương thành file PDF A4: vẽ phiếu HTML ra một khung ẩn, chụp bằng html2canvas
-   (chữ tiếng Việt do chính trình duyệt vẽ nên không lỗi dấu), rồi đặt ảnh vào trang A4. */
-async function slipPdf(db, mk, row) {
+/* Chụp phiếu lương thành ảnh: vẽ phiếu HTML ra một khung ẩn rồi chụp bằng html2canvas
+   (chữ tiếng Việt do chính trình duyệt vẽ nên không lỗi dấu). Dùng chung cho PDF và copy ảnh. */
+async function slipCanvas(db, mk, row) {
   const box = document.createElement('div');
   box.style.cssText = 'position:fixed;left:-12000px;top:0;width:794px;background:#fff';
   document.body.appendChild(box);
@@ -2421,16 +2421,26 @@ async function slipPdf(db, mk, row) {
     ReactDOM.flushSync(() => root.render(<Payslip db={db} mk={mk} row={row} qrSrc={qr} print />));
     await Promise.all(Array.from(box.querySelectorAll('img')).map(im => im.complete ? 0
       : new Promise(r => { im.onload = im.onerror = r; setTimeout(r, 4000); })));
-    const canvas = await window.html2canvas(box.firstChild, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false });
-    const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', compress: true });
-    const pw = 210, ph = 297, mg = 8;
-    let w = pw - mg * 2, h = canvas.height * w / canvas.width;
-    if (h > ph - mg * 2) { h = ph - mg * 2; w = canvas.width * h / canvas.height; }
-    pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', (pw - w) / 2, mg, w, h);
-    return pdf.output('blob');
+    return await window.html2canvas(box.firstChild, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false });
   } finally {
     root.unmount(); box.remove();
   }
+}
+/* Phiếu lương → file PDF: đặt ảnh phiếu vào một trang A4 */
+async function slipPdf(db, mk, row) {
+  const canvas = await slipCanvas(db, mk, row);
+  const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', compress: true });
+  const pw = 210, ph = 297, mg = 8;
+  let w = pw - mg * 2, h = canvas.height * w / canvas.width;
+  if (h > ph - mg * 2) { h = ph - mg * 2; w = canvas.width * h / canvas.height; }
+  pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', (pw - w) / 2, mg, w, h);
+  return pdf.output('blob');
+}
+/* Phiếu lương → ảnh PNG (để copy dán qua Zalo) */
+async function slipPng(db, mk, row) {
+  await loadPdfLibs();
+  const canvas = await slipCanvas(db, mk, row);
+  return new Promise((ok, err) => canvas.toBlob(b => (b ? ok(b) : err(new Error('Không tạo được ảnh'))), 'image/png'));
 }
 
 function Payslip({ db, mk, row, qrSrc, print }) {
@@ -2535,19 +2545,46 @@ function Payslip({ db, mk, row, qrSrc, print }) {
 /* Xem trước phiếu + nút tải file PDF */
 function PayslipModal({ db, mk, row, onClose }) {
   const { toast } = useApp();
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState('');
   const download = async () => {
-    setBusy(true);
+    setBusy('pdf');
     try {
       await downloadSlip(db, mk, row);
     } catch (e) { toast(e.message || 'Không tạo được PDF'); }
-    setBusy(false);
+    setBusy('');
+  };
+  /* Copy ảnh phiếu để dán qua Zalo. Ảnh phải được đưa cho ClipboardItem dưới dạng promise NGAY
+     trong lúc bấm (Safari/iPhone chỉ cho ghi bộ nhớ tạm trong lúc người dùng đang bấm).
+     Máy không cho copy ảnh: điện thoại thì mở bảng Chia sẻ (chọn Zalo), máy tính thì tải ảnh về. */
+  const copyImage = async () => {
+    setBusy('img');
+    const png = slipPng(db, mk, row);
+    png.catch(() => { });
+    try {
+      if (!navigator.clipboard || !window.ClipboardItem) throw new Error('no-clipboard');
+      await navigator.clipboard.write([new window.ClipboardItem({ 'image/png': png })]);
+      toast('Đã copy ảnh phiếu lương — mở Zalo rồi dán (Ctrl+V / giữ ô chat → Dán)');
+    } catch (e) {
+      try {
+        const blob = await png;
+        const name = noAccent(slipFileName(row, mk)).replace(/\.pdf$/, '.png');
+        const file = new File([blob], name, { type: 'image/png' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: 'Phiếu lương ' + row.emp.name }).catch(() => { });
+        } else {
+          saveBlob(blob, name);
+          toast('Trình duyệt này không cho copy ảnh — đã tải ảnh về máy, kéo thả vào Zalo');
+        }
+      } catch (e2) { toast(e2.message || 'Không tạo được ảnh'); }
+    }
+    setBusy('');
   };
   return (
     <Modal wide title={'Phiếu lương · ' + row.emp.name} sub={mLabel(mk) + ' · thực nhận ' + moneyD(row.net)} onClose={onClose}
       foot={<>
         <button className="btn" onClick={onClose}>Đóng</button>
-        <button className="btn pri" disabled={busy} onClick={download}><Ic.down size={14} /> {busy ? 'Đang tạo PDF…' : 'Tải PDF'}</button>
+        <button className="btn" disabled={!!busy} onClick={copyImage}><Ic.copy size={14} /> {busy === 'img' ? 'Đang tạo ảnh…' : 'Copy ảnh'}</button>
+        <button className="btn pri" disabled={!!busy} onClick={download}><Ic.down size={14} /> {busy === 'pdf' ? 'Đang tạo PDF…' : 'Tải PDF'}</button>
       </>}>
       <div className="ps-paper"><Payslip db={db} mk={mk} row={row} /></div>
     </Modal>
