@@ -303,7 +303,7 @@ table.pnl tfoot tr.margin td{font-size:12px;color:var(--txt-3);border-bottom:non
 .ps-brand{display:flex;gap:10px;align-items:center}
 .ps-brand img{width:42px;height:42px;border-radius:10px;object-fit:cover}
 .ps-brand b{display:block;font-size:14pt;font-weight:800;letter-spacing:-.01em}
-.ps-brand span{font-size:9pt;color:#5A6068}
+.ps-brand span{display:block;font-size:8.5pt;color:#5A6068;line-height:1.35}
 .ps-title{text-align:right}
 .ps-title h2{margin:0;font-size:17pt;font-weight:800;letter-spacing:.06em;color:#8C6220}
 .ps-title div{font-size:10.5pt;font-weight:600}
@@ -315,6 +315,7 @@ table.pnl tfoot tr.margin td{font-size:12px;color:var(--txt-3);border-bottom:non
 .ps-tb td{padding:5px 0;border-bottom:1px dotted #D8D3D0}
 .ps-tb td:last-child{text-align:right;font-variant-numeric:tabular-nums}
 .ps-tb tr.b td{font-weight:700}
+.ps-tb tr.note td{font-size:9pt;color:#8B9199;font-style:italic}
 .ps-tb tr.net td{font-size:13pt;font-weight:800;border-top:1.5px solid #14181C;border-bottom:1.5px solid #14181C;padding:7px 0;color:#8C6220}
 .ps-words{font-size:9.5pt;color:#5A6068;margin-bottom:12px}
 .ps-sec{font-size:9pt;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#5A6068;margin:12px 0 6px}
@@ -382,6 +383,23 @@ table.pnl tfoot tr.margin td{font-size:12px;color:var(--txt-3);border-bottom:non
   .cal-d .tiny{display:inline}
 }
 
+/* ================= BẢNG LƯƠNG (dưới bảng công) ================= */
+.pay-head{padding:14px 18px 12px;border-bottom:1px solid var(--line-soft)}
+.pay-head h2{margin:0;text-align:center;font-size:20px;font-weight:800;letter-spacing:.04em;color:var(--brand-dark)}
+.pay-head > div{text-align:center;font-size:13px;color:var(--txt-2);margin:2px 0 10px}
+.pay-head dl{display:grid;grid-template-columns:150px 1fr;gap:2px 12px;margin:0;font-size:12.5px}
+.pay-head dt{color:var(--txt-3);text-transform:uppercase;font-size:11px;letter-spacing:.03em;padding-top:1px}
+.pay-head dd{margin:0}
+table.tb.pay{min-width:1500px;font-size:12.5px}
+table.tb.pay th{white-space:normal;line-height:1.25;vertical-align:bottom;font-size:10.5px;min-width:84px}
+table.tb.pay th.nm{min-width:150px}
+table.tb.pay th.grp{text-align:center;border-bottom:1px solid var(--line-soft)}
+table.tb.pay td{padding:7px 8px;white-space:nowrap}
+table.tb.pay .nm{position:sticky;left:0;background:var(--card);z-index:1;min-width:150px}
+table.tb.pay tbody tr:hover .nm{background:#FBFAF9}
+table.tb.pay tfoot .nm{background:#FBFAF9}
+.pay-in{width:104px;padding:5px 8px;font-size:12.5px}
+
 /* ================= BIỂU ĐỒ ================= */
 .chart-wrap{padding:8px 18px 18px}
 .bar-row{display:flex;align-items:center;gap:12px;padding:6px 0;border-radius:9px;transition:background .16s}
@@ -419,6 +437,9 @@ table.ts td.cell.has input{color:var(--green)}
 table.ts .tot{position:sticky;right:0;z-index:2;background:#FBFAF9;min-width:86px;text-align:right;
   padding:7px 11px;font-weight:700;font-variant-numeric:tabular-nums}
 table.ts thead .tot{z-index:4}
+table.ts th.pn,table.ts td.pn{min-width:54px;background:var(--violet-wash)}
+table.ts thead th.pn{color:var(--violet);line-height:1.1;z-index:3}
+table.ts td.cell.pn.has input{color:var(--violet)}
 
 /* ================= CHẤM CÔNG TRÊN ĐIỆN THOẠI =================
    Bảng 31 cột không dùng được trên màn 375px: kéo ngang tìm đúng ô của đúng người là việc
@@ -874,10 +895,11 @@ const SEED_EMP = [
   { id: 'E5', name: 'Đặng Minh Quân', title: 'Buồng phòng', rate: 25000, phone: '0988 445 219', joined: '2025-02-20', bin: '970407', accNo: '1903445522', accName: 'DANG MINH QUAN', status: 'active' },
   { id: 'E6', name: 'Bùi Văn Nam', title: 'Bảo trì – kỹ thuật', rate: 30000, phone: '0909 664 132', joined: '2024-03-05', bin: '970418', accNo: '2100998877', accName: 'BUI VAN NAM', status: 'active' },
   { id: 'E7', name: 'Huỳnh Thị Thu', title: 'Buồng phòng', rate: 24000, phone: '0931 555 702', joined: '2022-11-01', bin: '970432', accNo: '0331122334', accName: 'HUYNH THI THU', status: 'off' },
-];
+  { id: 'E8', name: 'Kế toán thuế', title: 'Nhân viên', contract: 'Parttime', payType: 'month', salary: 3000000, rate: 0, phone: '', joined: '2025-01-01', bin: '970436', accNo: '', accName: '', status: 'active' },
+].map(e => ({ contract: 'Fulltime', payType: 'hour', ...e }));
 /* Số giờ một ngày công của từng người — bộ sinh dữ liệu mẫu dùng con số này */
 const SEED_SHIFT = { E1: 8, E2: 8, E3: 8, E4: 7, E5: 7, E6: 5, E7: 7 };
-const SEED_DAYS = { E1: 26, E2: 26, E3: 26, E4: 26, E5: 26, E6: 26, E7: 0 };
+const SEED_DAYS = { E1: 26, E2: 26, E3: 26, E4: 26, E5: 26, E6: 26, E7: 0, E8: 0 };
 
 /* Danh sách tháng có dữ liệu: 01/2025 -> tháng hiện tại */
 const allMonths = () => {
@@ -1140,19 +1162,47 @@ const claimedIds = (db) => {
 
 const rowsOfMonth = (db, mk) => (db.cash || []).filter(x => String(x.date).slice(0, 7) === mk);
 
-/* Lương gộp phải trả cho tháng công mk — giờ × đơn giá, cộng mọi nhân viên */
-const grossOf = (db, mk) => {
-  const cells = (db.timesheet || {})[mk] || {};
-  return (db.employees || []).reduce((sum, e) => {
-    const row = cells[e.id] || {};
-    const h = Object.values(row).reduce((a, b) => a + (Number(b) || 0), 0);
-    return sum + h * (Number(e.rate) || 0);
-  }, 0);
-};
+/* Ô "Phép năm" của bảng công: số giờ nghỉ phép năm trong tháng, lưu cùng chỗ với giờ từng ngày
+   (key 'pn' thay vì số ngày). Được trả lương như giờ làm thường, nhưng KHÔNG tính là ngày làm việc. */
+const PN = 'pn';
+/* Phụ cấp tiền ăn chỉ để diễn giải trên bảng lương / phiếu lương — đã nằm sẵn trong lương, không cộng thêm */
+const MEAL_PER_DAY = 25000;
+
+/* Tổng giờ được trả lương = giờ các ngày + giờ phép năm */
 const hoursOf = (db, mk, empId) => {
   const row = ((db.timesheet || {})[mk] || {})[empId] || {};
   return Object.values(row).reduce((a, b) => a + (Number(b) || 0), 0);
 };
+const leaveOf = (db, mk, empId) => Number((((db.timesheet || {})[mk] || {})[empId] || {})[PN]) || 0;
+/* Số ngày làm việc = số ngày có giờ công (không đếm phép năm) */
+const daysOf = (db, mk, empId) => {
+  const row = ((db.timesheet || {})[mk] || {})[empId] || {};
+  return Object.keys(row).filter(k => k !== PN && Number(row[k]) > 0).length;
+};
+
+/* Hai cách tính lương: theo giờ (giờ × đơn giá) hoặc cố định tháng (nhân viên part-time, kế toán thuế...).
+   Người lương cố định chỉ tính từ tháng vào làm, và chỉ khi đang làm hoặc tháng đó có công. */
+const isFixed = (emp) => emp && emp.payType === 'month';
+const paidThisMonth = (db, mk, emp) => {
+  if (hoursOf(db, mk, emp.id) > 0) return true;
+  if (!isFixed(emp) || emp.status !== 'active') return false;
+  return !emp.joined || String(emp.joined).slice(0, 7) <= mk;
+};
+/* Phần lương CÔNG TY TRẢ của một người (chưa trừ gì): theo công + phụ cấp trách nhiệm + thưởng */
+const payBase = (db, mk, emp) => {
+  const ov = ((db.payroll || {})[mk] || {})[emp.id] || {};
+  const hours = hoursOf(db, mk, emp.id);
+  const gross = isFixed(emp) ? n0(emp.salary) : hours * (Number(emp.rate) || 0);
+  const resp = n0(emp.respAllow);
+  return { ov, hours, gross, resp, base: gross + resp, bonus: n0(ov.bonus) };
+};
+
+/* Chi phí lương tạm tính của tháng công mk — dùng cho báo cáo lãi lỗ khi chưa chốt */
+const grossOf = (db, mk) => (db.employees || []).reduce((sum, e) => {
+  if (!paidThisMonth(db, mk, e)) return sum;
+  const p = payBase(db, mk, e);
+  return sum + p.base + p.bonus;
+}, 0);
 
 /* Tạm ứng app tự tìm được trong sổ quỹ cho một người trong một tháng */
 const advanceRows = (db, mk, emp) => {
@@ -1164,15 +1214,21 @@ const advanceRows = (db, mk, emp) => {
 };
 const autoAdvance = (db, mk, emp) => advanceRows(db, mk, emp).reduce((a, b) => a + b.amount, 0);
 
-/* Một dòng bảng lương — có ghi đè tay thì lấy tay, không thì lấy số app tính */
+/* Một dòng bảng lương.
+   BHXH, thuế TNCN, tạm ứng, thưởng: chủ tự điền tay (ch_payroll/<tháng>.rows[id]).
+   Tạm ứng KHÔNG tự lấy từ sổ quỹ nữa — số sổ quỹ chỉ hiện làm gợi ý (advanceAuto). */
 const payRow = (db, mk, emp) => {
-  const ov = ((db.payroll || {})[mk] || {})[emp.id] || {};
-  const h = hoursOf(db, mk, emp.id);
-  const gross = h * (Number(emp.rate) || 0);
-  const auto = autoAdvance(db, mk, emp);
-  const adv = ov.advance != null ? Number(ov.advance) : auto;
-  const bhxh = Number(ov.bhxh) || 0;
-  return { emp, hours: h, gross, bhxh, advance: adv, advanceAuto: auto, advOverride: ov.advance != null, net: gross - bhxh - adv, paid: !!ov.paid };
+  const p = payBase(db, mk, emp);
+  const bhxh = n0(p.ov.bhxh), tncn = n0(p.ov.tncn), advance = n0(p.ov.advance);
+  const days = daysOf(db, mk, emp.id);
+  return {
+    emp, ...p, bhxh, tncn, advance, days,
+    leave: leaveOf(db, mk, emp.id),
+    meal: days * MEAL_PER_DAY,
+    advanceAuto: autoAdvance(db, mk, emp),
+    net: p.base - bhxh - tncn - advance + p.bonus,
+    paid: !!p.ov.paid,
+  };
 };
 
 /* Bộ số của một tháng — dùng chung cho cả ba trang báo cáo */
@@ -1905,7 +1961,7 @@ function PersonSheet({ emp, mk, locked, seePay, onClose }) {
   return (
     <Modal title={emp.name}
       sub={(emp.title || '') + ' · ' + mLabel(mk).toLowerCase() + ' · ' + hrs(total) + ' giờ'
-        + (seePay && emp.rate ? ' · ' + money(total * emp.rate) + ' đ' : '')}
+        + (seePay ? ' · ' + money(payBase(db, mk, emp).base) + ' đ' : '')}
       onClose={onClose}
       foot={<button className="btn pri" onClick={onClose}>Xong</button>}>
       {locked && <div className="banner"><Ic.lock size={16} /><div>Tháng này đã chốt lương nên không sửa được công.</div></div>}
@@ -1926,10 +1982,163 @@ function PersonSheet({ emp, mk, locked, seePay, onClose }) {
           );
         })}
       </div>
-      <div className="hint" style={{ marginTop: 14 }}>
+      <div className="fld" style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <label style={{ margin: 0, flex: 1 }}>Phép năm trong tháng (giờ) — được trả lương như giờ làm</label>
+        <input className="inp num" style={{ width: 90 }} inputMode="decimal" disabled={locked}
+          value={row[PN] == null ? '' : row[PN]} placeholder="0"
+          onChange={e => setCell(mk, emp.id, PN, e.target.value)} />
+      </div>
+      <div className="hint" style={{ marginTop: 6 }}>
         Để trống là ngày nghỉ. Gõ xong bấm phím <b>tiếp</b> trên bàn phím để nhảy sang ngày sau.
       </div>
     </Modal>
+  );
+}
+
+/* Ô nhập tiền trong bảng lương: hiện có dấu chấm ngăn nghìn, gõ thì chỉ nhận chữ số */
+function MoneyIn({ value, onChange, disabled }) {
+  return (
+    <input className="inp num pay-in" inputMode="numeric" disabled={disabled}
+      value={value ? money(value) : ''} placeholder="0"
+      onFocus={e => e.target.select()}
+      onChange={e => onChange(n0(e.target.value.replace(/\D/g, '')))} />
+  );
+}
+
+/* ---- BẢNG LƯƠNG DƯỚI BẢNG CHẤM CÔNG (chỉ chủ thấy) ----
+   Theo mẫu bảng lương Excel đang dùng: mọi nhân viên, cả lương theo giờ lẫn lương cố định.
+   - Tổng giờ, số ngày làm việc: lấy từ bảng công phía trên (tổng giờ đã gồm phép năm)
+   - Lương theo công = đơn giá × tổng giờ (người lương cố định: số lương cố định)
+   - Lương công / PC trách nhiệm = lương theo công + phụ cấp trách nhiệm (khai ở hồ sơ nhân viên)
+   - Phụ cấp tiền ăn = số ngày × 25.000 — CHỈ DIỄN GIẢI, đã nằm trong lương, không cộng thêm
+   - BHXH, thuế TNCN, tạm ứng, thưởng: chủ tự điền tay
+   - Thực nhận = lương công/PC − BHXH − TNCN − tạm ứng + thưởng */
+function PayTable({ mk }) {
+  const { db, setPay, toast } = useApp();
+  const { y, m } = mParse(mk);
+  const locked = monthStats(db, mk).closed;
+  const rows = (db.employees || [])
+    .filter(e => paidThisMonth(db, mk, e) || e.status === 'active')
+    .map(e => payRow(db, mk, e));
+  const tot = rows.reduce((a, r) => {
+    ['hours', 'gross', 'base', 'days', 'meal', 'bhxh', 'tncn', 'advance', 'bonus', 'net'].forEach(k => { a[k] = (a[k] || 0) + (r[k] || 0); });
+    a.bhxhBase = (a.bhxhBase || 0) + n0(r.emp.bhxhBase);
+    return a;
+  }, {});
+  const [busy, setBusy] = useState('');
+  const one = async (r) => {
+    setBusy(r.emp.id);
+    try { await downloadSlip(db, mk, r); } catch (e) { toast(e.message || 'Không tạo được PDF'); }
+    setBusy('');
+  };
+  const all = async () => {
+    const list = rows.filter(r => r.base || r.net);
+    if (!list.length) { toast('Tháng này chưa ai có lương'); return; }
+    try { await downloadAllSlips(db, mk, list, (i, n) => setBusy('all:' + i + '/' + n)); }
+    catch (e) { toast(e.message || 'Không tạo được PDF'); }
+    setBusy('');
+  };
+  const put = (r, k) => (v) => setPay(mk, r.emp.id, { [k]: v });
+  const cell = (v) => (v ? money(v) : '');
+
+  return (
+    <div className="card">
+      <div className="card-h">
+        <div><h3>Bảng lương {mLabel(mk).toLowerCase()}</h3>
+          <p>Giờ và ngày công lấy từ bảng công phía trên · BHXH, thuế TNCN, tạm ứng, thưởng điền tay</p></div>
+        <div className="sp">
+          {locked && <span className="tag t-green"><Ic.lock size={12} /> Đã chốt</span>}
+          <button className="btn pri" disabled={!!busy} onClick={all}>
+            <Ic.down size={14} /> {busy.startsWith('all:') ? 'Đang tạo ' + busy.slice(4) + '…' : 'Xuất tất cả phiếu lương'}
+          </button>
+        </div>
+      </div>
+      <div className="pay-head">
+        <h2>BẢNG LƯƠNG</h2>
+        <div>Từ <b>01/{pad2(m)}/{y}</b> đến <b>{daysIn(y, m)}/{pad2(m)}/{y}</b></div>
+        <dl>
+          <dt>Địa chỉ</dt><dd>{COMPANY.address}</dd>
+          <dt>Mã số doanh nghiệp</dt><dd className="mono">{COMPANY.taxCode}</dd>
+          <dt>Điện thoại</dt><dd>{COMPANY.phone}</dd>
+          <dt>Email</dt><dd>{COMPANY.email}</dd>
+        </dl>
+      </div>
+      <div className="scroll-x">
+        <table className="tb pay">
+          <thead>
+            <tr>
+              <th rowSpan="2" className="nm">Họ và tên</th>
+              <th rowSpan="2">Loại HĐ</th>
+              <th rowSpan="2">Chức vụ</th>
+              <th rowSpan="2" className="r">Tổng giờ</th>
+              <th rowSpan="2" className="r">Đơn giá</th>
+              <th rowSpan="2" className="r">Lương<br />theo công</th>
+              <th rowSpan="2" className="r">Lương tham<br />gia BHXH</th>
+              <th rowSpan="2" className="r">Lương công /<br />PC trách nhiệm</th>
+              <th rowSpan="2" className="r">Số ngày<br />làm việc</th>
+              <th rowSpan="2" className="r" title="Số ngày × 25.000 — chỉ diễn giải, đã gồm trong lương">Phụ cấp<br />tiền ăn*</th>
+              <th colSpan="3" className="grp">Khấu trừ</th>
+              <th rowSpan="2" className="r">Thưởng</th>
+              <th rowSpan="2" className="r">Thực nhận</th>
+              <th rowSpan="2" style={{ width: 70 }}></th>
+            </tr>
+            <tr>
+              <th className="r">BHXH</th><th className="r">Thuế TNCN</th><th className="r">Tạm ứng</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(r => (
+              <tr key={r.emp.id}>
+                <td className="nm"><b>{r.emp.name}</b></td>
+                <td>{r.emp.contract || '—'}</td>
+                <td>{r.emp.title || '—'}</td>
+                <td className="r mono">{r.hours ? hrs(r.hours) : ''}{r.leave ? <div className="hint">gồm {hrs(r.leave)} phép</div> : null}</td>
+                <td className="r mono">{isFixed(r.emp) ? <span className="hint">cố định</span> : cell(r.emp.rate)}</td>
+                <td className="r mono">{cell(r.gross)}</td>
+                <td className="r mono">{cell(n0(r.emp.bhxhBase))}</td>
+                <td className="r mono">{cell(r.base)}</td>
+                <td className="r mono">{r.days || ''}</td>
+                <td className="r mono" style={{ color: 'var(--txt-3)' }}>{cell(r.meal)}</td>
+                <td className="r"><MoneyIn value={r.bhxh} onChange={put(r, 'bhxh')} disabled={locked} /></td>
+                <td className="r"><MoneyIn value={r.tncn} onChange={put(r, 'tncn')} disabled={locked} /></td>
+                <td className="r"><MoneyIn value={r.advance} onChange={put(r, 'advance')} disabled={locked} /></td>
+                <td className="r"><MoneyIn value={r.bonus} onChange={put(r, 'bonus')} disabled={locked} /></td>
+                <td className="r mono"><b style={{ color: r.net < 0 ? 'var(--red)' : 'var(--txt)' }}>{money(r.net)}</b></td>
+                <td style={{ textAlign: 'center' }}>
+                  <button className="btn sm" disabled={!!busy || !(r.base || r.net)} title={'Tải phiếu lương PDF của ' + r.emp.name} onClick={() => one(r)}>
+                    {busy === r.emp.id ? '…' : '📄 PDF'}
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td className="nm">Tổng cộng</td><td></td><td></td>
+              <td className="r mono">{hrs(tot.hours || 0)}</td><td></td>
+              <td className="r mono">{cell(tot.gross)}</td>
+              <td className="r mono">{cell(tot.bhxhBase)}</td>
+              <td className="r mono">{cell(tot.base)}</td>
+              <td className="r mono">{tot.days || ''}</td>
+              <td className="r mono">{cell(tot.meal)}</td>
+              <td className="r mono">{cell(tot.bhxh)}</td>
+              <td className="r mono">{cell(tot.tncn)}</td>
+              <td className="r mono">{cell(tot.advance)}</td>
+              <td className="r mono">{cell(tot.bonus)}</td>
+              <td className="r mono" style={{ color: 'var(--brand-dark)', fontSize: 14.5 }}>{money(tot.net || 0)}</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div className="card-b" style={{ paddingTop: 10, borderTop: '1px solid var(--line-soft)' }}>
+        <div className="hint">
+          * Phụ cấp tiền ăn = số ngày làm việc × {money(MEAL_PER_DAY)} đ, chỉ để diễn giải — đã nằm trong lương, không cộng thêm.
+          Loại HĐ, lương cố định, phụ cấp trách nhiệm, lương tham gia BHXH khai ở trang <b>Nhân viên</b>.
+          File PDF đặt tên theo mẫu “Tên - Lương tháng {m} năm {y}”; xuất tất cả thì tải về một file .zip.
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -1956,7 +2165,8 @@ function TimesheetPage() {
   const rowTotal = (e) => Object.values(cells[e.id] || {}).reduce((a, b) => a + (Number(b) || 0), 0);
   const dayTotal = (d) => emps.reduce((a, e) => a + (Number((cells[e.id] || {})[d]) || 0), 0);
   const grandH = emps.reduce((a, e) => a + rowTotal(e), 0);
-  const grandMoney = emps.reduce((a, e) => a + rowTotal(e) * (Number(e.rate) || 0), 0);
+  const grandMoney = seePay ? grossOf(db, mk) : 0;
+  const pnTotal = emps.reduce((a, e) => a + (Number((cells[e.id] || {})[PN]) || 0), 0);
 
   /* Bảng này gõ số liên tục — mũi tên và Enter phải đi được giữa các ô như Excel,
      không thì phải rời tay ra chuột 800 lần một tháng. */
@@ -2013,11 +2223,11 @@ function TimesheetPage() {
                       <div className="av">{initials(e.name)}</div>
                       <div className="nm">
                         <b>{e.name}</b>
-                        <small>{e.title}{seePay && e.rate ? ' · ' + money(e.rate) + 'đ/giờ' : ''}</small>
+                        <small>{e.title}{seePay && e.rate && !isFixed(e) ? ' · ' + money(e.rate) + 'đ/giờ' : ''}{seePay && isFixed(e) ? ' · lương cố định' : ''}</small>
                       </div>
                       <div className="hh">
                         <b style={{ color: h ? 'var(--txt)' : 'var(--txt-3)' }}>{hrs(h)}</b>
-                        <small>{h ? 'giờ' + (seePay && e.rate ? ' · ' + short(h * e.rate) : '') : 'chưa chấm'}</small>
+                        <small>{h ? 'giờ' + (seePay ? ' · ' + short(payBase(db, mk, e).base) : '') : 'chưa chấm'}</small>
                       </div>
                       <Ic.chev size={17} style={{ color: 'var(--txt-3)' }} />
                     </button>
@@ -2042,6 +2252,7 @@ function TimesheetPage() {
                           {d}<div style={{ fontSize: 8.5, fontWeight: 600, opacity: .75 }}>{['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][dowOf(y, m, d)]}</div>
                         </th>
                       ))}
+                      <th className="pn" title="Giờ nghỉ phép năm trong tháng — trả lương như giờ làm">Phép<br />năm</th>
                       <th className="tot">Tổng giờ</th>
                     </tr>
                   </thead>
@@ -2064,10 +2275,16 @@ function TimesheetPage() {
                             </td>
                           );
                         })}
+                        <td className={cls('cell pn', (cells[e.id] || {})[PN] && 'has')}>
+                          <input data-c={e.id + '_' + PN} inputMode="decimal" disabled={locked}
+                            value={(cells[e.id] || {})[PN] == null ? '' : (cells[e.id] || {})[PN]}
+                            onFocus={ev => ev.target.select()}
+                            onChange={ev => setCell(mk, e.id, PN, ev.target.value)} />
+                        </td>
                         <td className="tot">
                           {hrs(rowTotal(e))}
-                          {seePay && e.rate
-                            ? <div style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--txt-3)' }}>{short(rowTotal(e) * e.rate)}</div>
+                          {seePay && (e.rate || isFixed(e))
+                            ? <div style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--txt-3)' }}>{short(payBase(db, mk, e).base)}</div>
                             : null}
                         </td>
                       </tr>
@@ -2079,6 +2296,7 @@ function TimesheetPage() {
                           {dayTotal(d) ? hrs(dayTotal(d)) : '·'}
                         </td>
                       ))}
+                      <td className="cell pn" style={{ background: '#FCFBF9', fontWeight: 700, fontSize: 11.5 }}>{pnTotal ? hrs(pnTotal) : '·'}</td>
                       <td className="tot" style={{ color: 'var(--brand-dark)' }}>{hrs(grandH)}</td>
                     </tr>
                   </tbody>
@@ -2088,6 +2306,8 @@ function TimesheetPage() {
         </div>
       </div>
 
+      {seePay && (db.employees || []).length > 0 && <PayTable mk={mk} />}
+
       {who && <PersonSheet emp={who} mk={mk} locked={locked} seePay={seePay} onClose={() => setWho(null)} />}
     </div>
   );
@@ -2095,10 +2315,9 @@ function TimesheetPage() {
 const d0 = (d) => String(d);
 
 /* ===================== TRANG 5 — BẢNG LƯƠNG ===================== */
-/* ===================== PHIẾU LƯƠNG (IN / PDF) =====================
-   Không dùng thư viện PDF: thư viện nào cũng phải nhúng font riêng mới ra được dấu tiếng Việt,
-   nặng mà chữ vẫn xấu. Ở đây dựng phiếu bằng HTML rồi gọi lệnh In của trình duyệt — chọn
-   "Lưu thành PDF" là có file, chữ nét như trên màn hình, điện thoại cũng làm được. */
+/* ===================== PHIẾU LƯƠNG (PDF) =====================
+   Phiếu dựng bằng HTML (chữ tiếng Việt do trình duyệt vẽ, không lỗi dấu), rồi html2canvas + jsPDF
+   chụp lại thành file PDF A4 tải thẳng về máy. Xuất tất cả thì gom mọi file vào một .zip. */
 const VN_DIGIT = ['không', 'một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám', 'chín'];
 /* Đọc một nhóm 3 chữ số. full = nhóm này đứng sau nhóm khác nên phải đọc đủ "không trăm", "lẻ" */
 function vnTriple(n, full) {
@@ -2128,34 +2347,119 @@ function vnWords(v) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-function Payslip({ db, mk, row }) {
+/* Thông tin doanh nghiệp in trên bảng lương và phiếu lương */
+const COMPANY = {
+  name: 'CLIFFHOUSE HOTEL',
+  address: '12B Trần Phú, phường Vĩnh Nguyên, tp.Nha Trang',
+  taxCode: '4201972605',
+  phone: '02586 299399 - 0796 162162',
+  email: 'nhatrangholiday12c@gmail.com',
+};
+
+/* ---------- Mã QR VietQR tự sinh ----------
+   Ảnh QR trên màn hình lấy từ img.vietqr.io, nhưng khi dựng file PDF trình duyệt không được đọc
+   ảnh của trang khác (chặn CORS) → ô QR trong PDF sẽ trống. Nên phiếu PDF tự sinh mã theo chuẩn
+   EMVCo/NAPAS VietQR — cùng nội dung với ảnh img.vietqr.io: ngân hàng, số tài khoản, số tiền,
+   nội dung chuyển khoản. */
+const tlv = (id, v) => id + String(v.length).padStart(2, '0') + v;
+function crc16(s) {
+  let c = 0xFFFF;
+  for (let i = 0; i < s.length; i++) {
+    c ^= s.charCodeAt(i) << 8;
+    for (let j = 0; j < 8; j++) c = (c & 0x8000) ? ((c << 1) ^ 0x1021) & 0xFFFF : (c << 1) & 0xFFFF;
+  }
+  return c.toString(16).toUpperCase().padStart(4, '0');
+}
+function vietQrPayload(emp, amount, content) {
+  const acc = tlv('00', 'A000000727') + tlv('01', tlv('00', emp.bin) + tlv('01', emp.accNo)) + tlv('02', 'QRIBFTTA');
+  const amt = Math.max(0, n0(amount));
+  const info = noAccent(content).replace(/[^A-Za-z0-9 .]/g, '').slice(0, 50);
+  let p = tlv('00', '01') + tlv('01', amt ? '12' : '11') + tlv('38', acc) + tlv('53', '704')
+    + (amt ? tlv('54', String(amt)) : '') + tlv('58', 'VN') + (info ? tlv('62', tlv('08', info)) : '') + '6304';
+  return p + crc16(p);
+}
+
+/* ---------- Thư viện dựng PDF: chỉ tải khi bấm xuất, không bắt mọi người tải kèm ---------- */
+const PDF_LIBS = [
+  'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js',
+  'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js',
+  'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js',
+  'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js',
+];
+const loadPdfLibs = () => Promise.all(PDF_LIBS.map(u => loadScript(u, 'Không tải được thư viện tạo PDF — kiểm tra mạng')));
+const qrDataUrl = (text) => {
+  const q = window.qrcode(0, 'M');
+  q.addData(text); q.make();
+  return q.createDataURL(6, 2);
+};
+const slipFileName = (row, mk) => {
+  const { y, m } = mParse(mk);
+  return (row.emp.name + ' - Lương tháng ' + m + ' năm ' + y).replace(/[\\/:*?"<>|]/g, '') + '.pdf';
+};
+const saveBlob = (blob, name) => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+};
+
+/* Dựng phiếu lương thành file PDF A4: vẽ phiếu HTML ra một khung ẩn, chụp bằng html2canvas
+   (chữ tiếng Việt do chính trình duyệt vẽ nên không lỗi dấu), rồi đặt ảnh vào trang A4. */
+async function slipPdf(db, mk, row) {
+  const box = document.createElement('div');
+  box.style.cssText = 'position:fixed;left:-12000px;top:0;width:794px;background:#fff';
+  document.body.appendChild(box);
+  const root = ReactDOM.createRoot(box);
+  try {
+    const qr = hasBank(row.emp) && row.net > 0 ? qrDataUrl(vietQrPayload(row.emp, row.net, qrContent(row.emp, mk))) : null;
+    ReactDOM.flushSync(() => root.render(<Payslip db={db} mk={mk} row={row} qrSrc={qr} print />));
+    await Promise.all(Array.from(box.querySelectorAll('img')).map(im => im.complete ? 0
+      : new Promise(r => { im.onload = im.onerror = r; setTimeout(r, 4000); })));
+    const canvas = await window.html2canvas(box.firstChild, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false });
+    const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', compress: true });
+    const pw = 210, ph = 297, mg = 8;
+    let w = pw - mg * 2, h = canvas.height * w / canvas.width;
+    if (h > ph - mg * 2) { h = ph - mg * 2; w = canvas.width * h / canvas.height; }
+    pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', (pw - w) / 2, mg, w, h);
+    return pdf.output('blob');
+  } finally {
+    root.unmount(); box.remove();
+  }
+}
+
+function Payslip({ db, mk, row, qrSrc, print }) {
   const { emp } = row;
   const { y, m } = mParse(mk);
   const dim = daysIn(y, m);
   const cells = ((db.timesheet || {})[mk] || {})[emp.id] || {};
-  const workDays = Object.values(cells).filter(v => Number(v) > 0).length;
   const adv = advanceRows(db, mk, emp);
   const st = monthStats(db, mk);
   /* Lịch bắt đầu từ thứ Hai: ô trống đầu tháng cho ngày 1 rơi đúng cột */
   const lead = (dowOf(y, m, 1) + 6) % 7;
-  const qr = hasBank(emp) && row.net > 0 ? vietQr(emp, row.net, qrContent(emp, mk), 'qr_only') : null;
+  const qr = qrSrc !== undefined ? qrSrc
+    : hasBank(emp) && row.net > 0 ? vietQr(emp, row.net, qrContent(emp, mk), 'qr_only') : null;
+  const fixed = isFixed(emp);
 
   return (
-    <div className="ps">
+    <div className={cls('ps', print && 'ps-print')}>
       <div className="ps-top">
         <div className="ps-brand">
           {BRAND.logo && <img src={BRAND.logo} alt="" />}
-          <div><b>{BRAND.name}</b><span>{BRAND.sub}</span></div>
+          <div>
+            <b>{COMPANY.name}</b>
+            <span>{COMPANY.address}</span>
+            <span>MST {COMPANY.taxCode} · ĐT {COMPANY.phone}</span>
+          </div>
         </div>
         <div className="ps-title">
           <h2>PHIẾU LƯƠNG</h2>
-          <div>{mLabel(mk)}</div>
+          <div>Tháng {m} năm {y}</div>
         </div>
       </div>
 
       <div className="ps-info">
         <div><span>Họ tên</span><b>{emp.name}</b></div>
-        <div><span>Chức danh</span><b>{emp.title || '—'}</b></div>
+        <div><span>Chức vụ · Loại hợp đồng</span><b>{emp.title || '—'}{emp.contract ? ' · ' + emp.contract : ''}</b></div>
         <div><span>Số điện thoại</span><b>{emp.phone || '—'}</b></div>
         <div><span>Ngày vào làm</span><b>{emp.joined ? dFull(emp.joined) : '—'}</b></div>
         <div className="w2"><span>Tài khoản nhận</span><b>{hasBank(emp) ? bankName(emp.bin) + ' · ' + emp.accNo + (emp.accName ? ' · ' + emp.accName : '') : 'Chưa có số tài khoản'}</b></div>
@@ -2163,17 +2467,23 @@ function Payslip({ db, mk, row }) {
 
       <table className="ps-tb">
         <tbody>
-          <tr><td>Giờ công trong tháng</td><td>{hrs(row.hours)} giờ · {workDays} ngày</td></tr>
-          <tr><td>Đơn giá</td><td>{moneyD(emp.rate)} / giờ</td></tr>
-          <tr className="b"><td>Lương gộp</td><td>{moneyD(row.gross)}</td></tr>
+          <tr><td>Tổng giờ công{row.leave ? ' (gồm ' + hrs(row.leave) + ' giờ phép năm)' : ''}</td><td>{hrs(row.hours)} giờ · {row.days} ngày làm việc</td></tr>
+          <tr><td>{fixed ? 'Lương cố định tháng' : 'Đơn giá'}</td><td>{fixed ? moneyD(emp.salary) : moneyD(emp.rate) + ' / giờ'}</td></tr>
+          <tr><td>Lương theo công</td><td>{moneyD(row.gross)}</td></tr>
+          {row.resp > 0 && <tr><td>Phụ cấp trách nhiệm</td><td>+ {moneyD(row.resp)}</td></tr>}
+          <tr className="b"><td>Lương công / PC trách nhiệm</td><td>{moneyD(row.base)}</td></tr>
+          {row.meal > 0 && <tr className="note"><td>Trong đó phụ cấp tiền ăn ({row.days} ngày × {money(MEAL_PER_DAY)})</td><td>{moneyD(row.meal)}</td></tr>}
+          {n0(emp.bhxhBase) > 0 && <tr className="note"><td>Lương tham gia BHXH</td><td>{moneyD(emp.bhxhBase)}</td></tr>}
           <tr><td>Trừ BHXH</td><td>{row.bhxh ? '− ' + moneyD(row.bhxh) : '0 đ'}</td></tr>
+          <tr><td>Trừ thuế TNCN</td><td>{row.tncn ? '− ' + moneyD(row.tncn) : '0 đ'}</td></tr>
           <tr><td>Trừ tạm ứng</td><td>{row.advance ? '− ' + moneyD(row.advance) : '0 đ'}</td></tr>
-          <tr className="net"><td>THỰC LĨNH</td><td>{moneyD(row.net)}</td></tr>
+          {row.bonus > 0 && <tr><td>Thưởng</td><td>+ {moneyD(row.bonus)}</td></tr>}
+          <tr className="net"><td>THỰC NHẬN</td><td>{moneyD(row.net)}</td></tr>
         </tbody>
       </table>
       <div className="ps-words">Bằng chữ: <i>{vnWords(row.net)}</i></div>
 
-      <div className="ps-sec">Bảng chấm công {mLabel(mk).toLowerCase()}</div>
+      <div className="ps-sec">Bảng chấm công tháng {m}/{y}{row.leave ? ' · phép năm ' + hrs(row.leave) + ' giờ' : ''}</div>
       <div className="ps-cal">
         {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map(d => <div key={d} className="hd">{d}</div>)}
         {Array.from({ length: lead }, (_, i) => <div key={'p' + i} className="pad" />)}
@@ -2187,18 +2497,15 @@ function Payslip({ db, mk, row }) {
         })}
       </div>
 
-      <div className="ps-sec">Tạm ứng trong tháng</div>
-      {adv.length ? (
+      {adv.length > 0 && <>
+        <div className="ps-sec">Phiếu tạm ứng ghi trong sổ quỹ (để đối chiếu)</div>
         <table className="ps-list">
           <tbody>
             {adv.map(a => <tr key={a.id}><td>{dFull(a.date)}</td><td>{a.note || a.cat}</td><td>{moneyD(a.amount)}</td></tr>)}
-            <tr className="b"><td colSpan="2">Cộng theo sổ quỹ</td><td>{moneyD(row.advanceAuto)}</td></tr>
+            <tr className="b"><td colSpan="2">Cộng</td><td>{moneyD(row.advanceAuto)}</td></tr>
           </tbody>
         </table>
-      ) : <div className="ps-none">Không có phiếu tạm ứng nào trong sổ quỹ.</div>}
-      {row.advOverride && row.advance !== row.advanceAuto && (
-        <div className="ps-none">Số tạm ứng trừ vào lương đã được điều chỉnh tay thành {moneyD(row.advance)}.</div>
-      )}
+      </>}
 
       <div className="ps-foot">
         {qr ? (
@@ -2213,40 +2520,51 @@ function Payslip({ db, mk, row }) {
         </div>
       </div>
       <div className="ps-meta">
-        In ngày {dFull(todayKey())} · Lương {st.closed ? 'đã chốt' : 'tạm tính — có thể còn thay đổi'}
+        Lập ngày {dFull(todayKey())} · Lương {st.closed ? 'đã chốt' : 'tạm tính — có thể còn thay đổi'}
       </div>
     </div>
   );
 }
 
-/* Xem trước phiếu + nút in. Bản để in được đặt thẳng dưới <body> (portal) vì khi in,
-   mọi thứ khác trong trang bị ẩn đi — kể cả cái hộp thoại này. */
+/* Xem trước phiếu + nút tải file PDF */
 function PayslipModal({ db, mk, row, onClose }) {
+  const { toast } = useApp();
   const [busy, setBusy] = useState(false);
-  const doPrint = async () => {
+  const download = async () => {
     setBusy(true);
-    /* Chờ ảnh (logo, QR) tải xong rồi mới in, không thì PDF ra ô trống */
-    const imgs = Array.from(document.querySelectorAll('.print-root img'));
-    await Promise.all(imgs.map(im => im.complete ? 0 : new Promise(r => { im.onload = im.onerror = r; setTimeout(r, 4000); })));
-    const old = document.title;
-    /* Tên file PDF gợi ý lấy theo tiêu đề trang */
-    document.title = noAccent('Phieu luong T' + mParse(mk).m + '-' + mParse(mk).y + ' - ' + row.emp.name);
-    window.print();
-    setTimeout(() => { document.title = old; setBusy(false); }, 500);
+    try {
+      await downloadSlip(db, mk, row);
+    } catch (e) { toast(e.message || 'Không tạo được PDF'); }
+    setBusy(false);
   };
   return (
-    <>
-      <Modal wide title={'Phiếu lương · ' + row.emp.name} sub={mLabel(mk) + ' · thực lĩnh ' + moneyD(row.net)} onClose={onClose}
-        foot={<>
-          <span className="hint" style={{ marginRight: 'auto', alignSelf: 'center' }}>Ở hộp thoại In, chọn “Lưu thành PDF”</span>
-          <button className="btn" onClick={onClose}>Đóng</button>
-          <button className="btn pri" disabled={busy} onClick={doPrint}><Ic.down size={14} /> Tải PDF / In</button>
-        </>}>
-        <div className="ps-paper"><Payslip db={db} mk={mk} row={row} /></div>
-      </Modal>
-      {ReactDOM.createPortal(<div className="print-root"><Payslip db={db} mk={mk} row={row} /></div>, document.body)}
-    </>
+    <Modal wide title={'Phiếu lương · ' + row.emp.name} sub={mLabel(mk) + ' · thực nhận ' + moneyD(row.net)} onClose={onClose}
+      foot={<>
+        <button className="btn" onClick={onClose}>Đóng</button>
+        <button className="btn pri" disabled={busy} onClick={download}><Ic.down size={14} /> {busy ? 'Đang tạo PDF…' : 'Tải PDF'}</button>
+      </>}>
+      <div className="ps-paper"><Payslip db={db} mk={mk} row={row} /></div>
+    </Modal>
   );
+}
+
+/* Nút PDF trên từng dòng: tải thẳng file, không cần mở xem trước.
+   Tải lẻ thì đặt tên KHÔNG DẤU: có trình duyệt bỏ qua tên file có dấu khi tải thẳng và đặt tên
+   thành "download". Trong file .zip thì tên có dấu vẫn giữ nguyên. */
+async function downloadSlip(db, mk, row) {
+  await loadPdfLibs();
+  saveBlob(await slipPdf(db, mk, row), noAccent(slipFileName(row, mk)));
+}
+/* Xuất tất cả: mỗi người một file PDF, gom vào một file .zip tải một lượt */
+async function downloadAllSlips(db, mk, rows, onStep) {
+  await loadPdfLibs();
+  const zip = new window.JSZip();
+  for (let i = 0; i < rows.length; i++) {
+    if (onStep) onStep(i + 1, rows.length);
+    zip.file(slipFileName(rows[i], mk), await slipPdf(db, mk, rows[i]));
+  }
+  const { y, m } = mParse(mk);
+  saveBlob(await zip.generateAsync({ type: 'blob' }), 'Phieu luong thang ' + m + '-' + y + '.zip');
 }
 
 function PayrollPage() {
@@ -2256,10 +2574,11 @@ function PayrollPage() {
   const [closing, setClosing] = useState(false);
   const [slip, setSlip] = useState(null);
   const st = monthStats(db, mk);
-  const emps = (db.employees || []).filter(e => hoursOf(db, mk, e.id) > 0 || e.status === 'active');
-  const rows = emps.map(e => payRow(db, mk, e)).filter(r => r.hours > 0 || r.bhxh || r.advance);
+  const rows = (db.employees || []).map(e => payRow(db, mk, e))
+    .filter(r => paidThisMonth(db, mk, r.emp) || r.bhxh || r.advance || r.tncn || r.bonus);
+  /* "Lương gộp" = phần công ty trả: lương công + phụ cấp trách nhiệm + thưởng */
   const tot = rows.reduce((a, r) => ({
-    hours: a.hours + r.hours, gross: a.gross + r.gross, bhxh: a.bhxh + r.bhxh,
+    hours: a.hours + r.hours, gross: a.gross + r.base + r.bonus, bhxh: a.bhxh + r.bhxh + r.tncn,
     advance: a.advance + r.advance, net: a.net + r.net,
   }), { hours: 0, gross: 0, bhxh: 0, advance: 0, net: 0 });
   const paidCount = rows.filter(r => r.paid).length;
@@ -2271,7 +2590,7 @@ function PayrollPage() {
         <div className="card-h">
           <div>
             <h3>Bảng lương {mLabel(mk).toLowerCase()}</h3>
-            <p>Giờ công × đơn giá − BHXH − tạm ứng = số nằm trong mã QR</p>
+            <p>Lương công + phụ cấp + thưởng − BHXH − thuế TNCN − tạm ứng = số nằm trong mã QR</p>
           </div>
           <div className="sp">
             <MonthPick value={mk} onChange={setMk} />
@@ -2308,8 +2627,8 @@ function PayrollPage() {
 
       <div className="stats">
         <Stat label="Lương gộp" value={money(tot.gross)} icon={<span>📊</span>} sub={hrs(tot.hours) + ' giờ · ' + rows.length + ' người'} />
-        <Stat label="BHXH trừ" value={money(tot.bhxh)} icon={<span>🧾</span>} tone="violet" sub="gõ tay từng người" />
-        <Stat label="Tạm ứng đã lấy" value={money(tot.advance)} icon={<span>💸</span>} tone="amber" sub="lấy từ sổ quỹ, sửa đè được" />
+        <Stat label="BHXH + thuế TNCN trừ" value={money(tot.bhxh)} icon={<span>🧾</span>} tone="violet" sub="gõ tay ở bảng lương trang Chấm công" />
+        <Stat label="Tạm ứng đã lấy" value={money(tot.advance)} icon={<span>💸</span>} tone="amber" sub="chủ tự điền tay" />
         <Stat hero label="Thực chuyển khoản" value={money(tot.net)} icon={<span>🏦</span>}
           sub={'Đã chuyển ' + paidCount + '/' + rows.length + ' người'} />
       </div>
@@ -2341,8 +2660,8 @@ function PayrollPage() {
                     <div className="hint">{r.emp.title} · {bankName(r.emp.bin)} {r.emp.accNo || '—'}</div>
                   </td>
                   <td className="r mono">{hrs(r.hours)}</td>
-                  <td className="r mono" style={{ color: 'var(--txt-3)' }}>{money(r.emp.rate)}</td>
-                  <td className="r mono"><b>{money(r.gross)}</b></td>
+                  <td className="r mono" style={{ color: 'var(--txt-3)' }}>{isFixed(r.emp) ? 'cố định' : money(r.emp.rate)}</td>
+                  <td className="r mono"><b>{money(r.base + r.bonus)}</b></td>
                   <td className="r">
                     <input className="inp num" inputMode="numeric" disabled={st.closed}
                       value={r.bhxh ? money(r.bhxh) : ''} placeholder="0"
@@ -2352,12 +2671,10 @@ function PayrollPage() {
                     <input className="inp num" inputMode="numeric" disabled={st.closed}
                       value={r.advance ? money(r.advance) : ''} placeholder="0"
                       onChange={e => setPay(mk, r.emp.id, { advance: n0(e.target.value.replace(/\D/g, '')) })} />
-                    {r.advanceAuto > 0 && (
+                    {r.advanceAuto > 0 && r.advanceAuto !== r.advance && (
                       <div className="hint" style={{ marginTop: 3 }}>
-                        {r.advOverride
-                          ? <>sổ quỹ: {money(r.advanceAuto)} · <button className="btn sm" style={{ padding: '1px 6px', boxShadow: 'none' }}
-                            onClick={() => setPay(mk, r.emp.id, { advance: null })}>lấy lại</button></>
-                          : <>tự lấy từ sổ quỹ</>}
+                        sổ quỹ ghi {money(r.advanceAuto)}{!st.closed && <> · <button className="btn sm" style={{ padding: '1px 6px', boxShadow: 'none' }}
+                          onClick={() => setPay(mk, r.emp.id, { advance: r.advanceAuto })}>lấy số này</button></>}
                       </div>
                     )}
                   </td>
@@ -2523,7 +2840,7 @@ function StaffPage() {
               <input type="checkbox" checked={showOff} onChange={e => setShowOff(e.target.checked)} style={{ accentColor: 'var(--brand)' }} />
               Hiện cả người đã nghỉ
             </label>
-            <button className="btn pri" onClick={() => setEdit({ id: '', name: '', title: '', rate: 25000, phone: '', joined: todayKey(), bin: '970436', accNo: '', accName: '', status: 'active' })}>
+            <button className="btn pri" onClick={() => setEdit({ id: '', name: '', title: '', contract: 'Fulltime', payType: 'hour', rate: 25000, salary: 0, respAllow: 0, bhxhBase: 0, phone: '', joined: todayKey(), bin: '970436', accNo: '', accName: '', status: 'active' })}>
               <Ic.plus size={15} /> Thêm nhân viên
             </button>
           </div>
@@ -2532,7 +2849,7 @@ function StaffPage() {
           <table className="tb" style={{ minWidth: 900 }}>
             <thead>
               <tr>
-                <th>Họ tên</th><th>Chức danh</th><th className="r">Đơn giá giờ</th>
+                <th>Họ tên</th><th>Chức danh</th><th className="r">Lương</th>
                 <th>Số điện thoại</th><th>Vào làm</th><th>Tài khoản nhận lương</th>
                 <th className="r">Giờ {mLabel(mkNow).toLowerCase()}</th><th style={{ width: 90 }}></th>
               </tr>
@@ -2547,8 +2864,8 @@ function StaffPage() {
                       <div><b>{e.name}</b>{e.status !== 'active' && <div><span className="tag t-gray">đã nghỉ</span></div>}</div>
                     </div>
                   </td>
-                  <td>{e.title || '—'}</td>
-                  <td className="r mono"><b>{money(e.rate)}</b> đ</td>
+                  <td>{e.title || '—'}{e.contract ? <div className="hint">{e.contract}</div> : null}</td>
+                  <td className="r mono">{isFixed(e) ? <><b>{money(e.salary)}</b> đ<div className="hint">cố định / tháng</div></> : <><b>{money(e.rate)}</b> đ<div className="hint">/ giờ</div></>}</td>
                   <td className="mono" style={{ fontSize: 12.5 }}>{e.phone || '—'}</td>
                   <td className="mono" style={{ fontSize: 12.5, color: 'var(--txt-3)' }}>{e.joined ? dFull(e.joined) : '—'}</td>
                   <td>
@@ -2580,14 +2897,15 @@ function StaffPage() {
 function StaffModal({ emp, onClose, onSave, onDelete }) {
   const [f, setF] = useState(emp);
   const set = (p) => setF(x => ({ ...x, ...p }));
-  const ok = f.name.trim() && Number(f.rate) > 0;
+  const fixed = f.payType === 'month';
+  const ok = f.name.trim() && (fixed ? Number(f.salary) > 0 : Number(f.rate) > 0);
   return (
-    <Modal title={emp.id ? 'Sửa hồ sơ' : 'Thêm nhân viên'} sub={emp.id ? emp.name : 'Điền tên và đơn giá giờ là đủ để chấm công'}
+    <Modal title={emp.id ? 'Sửa hồ sơ' : 'Thêm nhân viên'} sub={emp.id ? emp.name : 'Điền tên và đơn giá giờ (hoặc lương cố định) là đủ'}
       onClose={onClose}
       foot={<>
         {onDelete && <button className="btn danger" onClick={onDelete} style={{ marginRight: 'auto' }}><Ic.trash size={14} /> Xoá</button>}
         <button className="btn" onClick={onClose}>Huỷ</button>
-        <button className="btn pri" disabled={!ok} onClick={() => onSave({ ...f, id: f.id || uid(), rate: n0(f.rate) })}>Lưu</button>
+        <button className="btn pri" disabled={!ok} onClick={() => onSave({ ...f, id: f.id || uid(), rate: n0(f.rate), salary: n0(f.salary), respAllow: n0(f.respAllow), bhxhBase: n0(f.bhxhBase), payType: f.payType || 'hour', contract: f.contract || '' })}>Lưu</button>
       </>}>
       <div className="grid2">
         <div className="fld"><label>Họ tên *</label>
@@ -2596,9 +2914,26 @@ function StaffModal({ emp, onClose, onSave, onDelete }) {
           <input className="inp" value={f.title} onChange={e => set({ title: e.target.value })} placeholder="Lễ tân" /></div>
       </div>
       <div className="grid2">
-        <div className="fld"><label>Đơn giá giờ (đ) *</label>
-          <input className="inp num" inputMode="numeric" value={money(f.rate)}
-            onChange={e => set({ rate: n0(e.target.value.replace(/\D/g, '')) })} /></div>
+        <div className="fld"><label>Loại hợp đồng</label>
+          <select className="inp" value={f.contract || ''} onChange={e => set({ contract: e.target.value })}>
+            <option value="">—</option>
+            <option value="Fulltime">Fulltime</option>
+            <option value="Parttime">Parttime</option>
+          </select></div>
+        <div className="fld"><label>Cách tính lương</label>
+          <select className="inp" value={fixed ? 'month' : 'hour'} onChange={e => set({ payType: e.target.value })}>
+            <option value="hour">Theo giờ công × đơn giá</option>
+            <option value="month">Cố định mỗi tháng</option>
+          </select></div>
+      </div>
+      <div className="grid2">
+        {fixed
+          ? <div className="fld"><label>Lương cố định tháng (đ) *</label>
+            <input className="inp num" inputMode="numeric" value={money(f.salary)}
+              onChange={e => set({ salary: n0(e.target.value.replace(/\D/g, '')) })} /></div>
+          : <div className="fld"><label>Đơn giá giờ (đ) *</label>
+            <input className="inp num" inputMode="numeric" value={money(f.rate)}
+              onChange={e => set({ rate: n0(e.target.value.replace(/\D/g, '')) })} /></div>}
         <div className="fld"><label>Trạng thái</label>
           <select className="inp" value={f.status} onChange={e => set({ status: e.target.value })}>
             <option value="active">Đang làm</option>
@@ -2610,6 +2945,15 @@ function StaffModal({ emp, onClose, onSave, onDelete }) {
           <input className="inp" value={f.phone} onChange={e => set({ phone: e.target.value })} placeholder="09xx xxx xxx" /></div>
         <div className="fld"><label>Ngày vào làm</label>
           <input className="inp" type="date" value={f.joined || ''} onChange={e => set({ joined: e.target.value })} /></div>
+      </div>
+
+      <div className="grid2">
+        <div className="fld"><label>Phụ cấp trách nhiệm / tháng (đ)</label>
+          <input className="inp num" inputMode="numeric" value={f.respAllow ? money(f.respAllow) : ''} placeholder="0"
+            onChange={e => set({ respAllow: n0(e.target.value.replace(/\D/g, '')) })} /></div>
+        <div className="fld"><label>Lương tham gia BHXH (đ)</label>
+          <input className="inp num" inputMode="numeric" value={f.bhxhBase ? money(f.bhxhBase) : ''} placeholder="không đóng"
+            onChange={e => set({ bhxhBase: n0(e.target.value.replace(/\D/g, '')) })} /></div>
       </div>
 
       <div className="eyebrow" style={{ margin: '16px 0 9px' }}>Tài khoản nhận lương — cần đủ 3 ô thì mới sinh được mã QR</div>
@@ -2651,14 +2995,15 @@ function StaffModal({ emp, onClose, onSave, onDelete }) {
 /* Thư viện đọc .xlsx nặng gần 1MB — chỉ tải khi thật sự mở hộp thoại nạp file,
    không bắt mọi người tải kèm mỗi lần mở app. */
 const XLSX_CDN = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
-const loadScript = (src) => new Promise((ok, err) => {
-  if (document.querySelector('script[data-lazy="' + src + '"]')) return ok();
+/* Nhớ promise theo địa chỉ: bấm hai lần liền khi thư viện chưa tải xong thì cùng chờ một lần tải */
+const _scripts = {};
+const loadScript = (src, msg) => _scripts[src] || (_scripts[src] = new Promise((ok, err) => {
   const s = document.createElement('script');
   s.src = src; s.dataset.lazy = src;
   s.onload = () => ok();
-  s.onerror = () => err(new Error('Không tải được thư viện đọc Excel — kiểm tra mạng'));
+  s.onerror = () => { s.remove(); delete _scripts[src]; err(new Error(msg || 'Không tải được thư viện đọc Excel — kiểm tra mạng')); };
   document.head.appendChild(s);
-});
+}));
 
 /* ---- ĐỌC CSV ----
    Tự đoán dấu ngăn cột: KiotViet xuất dấu phẩy, nhưng Excel bản tiếng Việt lưu lại
@@ -3587,7 +3932,7 @@ function App() {
       const ts = { ...(d.timesheet || {}) };
       const mo = { ...(ts[mk] || {}) };
       const row = { ...(mo[empId] || {}) };
-      if (v === '' || Number(v) === 0) delete row[day]; else row[day] = Math.min(24, Number(v));
+      if (v === '' || Number(v) === 0) delete row[day]; else row[day] = Math.min(day === PN ? 744 : 24, Number(v));
       mo[empId] = row; ts[mk] = mo;
       return { ...d, timesheet: ts };
     }, (next) => pushTsMonth(next, mk)),
