@@ -2031,11 +2031,8 @@ function PayTable({ mk }) {
     return a;
   }, {});
   const [busy, setBusy] = useState('');
-  const one = async (r) => {
-    setBusy(r.emp.id);
-    try { await downloadSlip(db, mk, r); } catch (e) { toast(e.message || 'Không tạo được PDF'); }
-    setBusy('');
-  };
+  /* Bấm PDF trên một dòng: mở xem trước phiếu, trong đó có nút tải */
+  const [slip, setSlip] = useState(null);
   const all = async () => {
     const list = rows.filter(r => r.base || r.net);
     if (!list.length) { toast('Tháng này chưa ai có lương'); return; }
@@ -2110,8 +2107,8 @@ function PayTable({ mk }) {
                 <td className="r"><MoneyIn value={r.bonus} onChange={put(r, 'bonus')} disabled={locked} /></td>
                 <td className="r mono"><b style={{ color: r.net < 0 ? 'var(--red)' : 'var(--txt)' }}>{money(r.net)}</b></td>
                 <td style={{ textAlign: 'center' }}>
-                  <button className="btn sm" disabled={!!busy || !(r.base || r.net)} title={'Tải phiếu lương PDF của ' + r.emp.name} onClick={() => one(r)}>
-                    {busy === r.emp.id ? '…' : '📄 PDF'}
+                  <button className="btn sm" disabled={!(r.base || r.net)} title={'Xem và tải phiếu lương của ' + r.emp.name} onClick={() => setSlip(r.emp.id)}>
+                    📄 PDF
                   </button>
                 </td>
               </tr>
@@ -2140,9 +2137,12 @@ function PayTable({ mk }) {
         <div className="hint">
           * Phụ cấp tiền ăn = số ngày làm việc × {money(MEAL_PER_DAY)} đ, chỉ để diễn giải — đã nằm trong lương, không cộng thêm.
           Loại HĐ, lương cố định, phụ cấp trách nhiệm, lương tham gia BHXH khai ở trang <b>Nhân viên</b>.
-          File PDF đặt tên theo mẫu “Tên - Lương tháng {m} năm {y}”; xuất tất cả thì tải về một file .zip.
+          Bấm PDF trên từng dòng để xem trước rồi tải; xuất tất cả thì tải về một file .zip.
         </div>
       </div>
+      {slip && rows.find(r => r.emp.id === slip) && (
+        <PayslipModal db={db} mk={mk} row={rows.find(r => r.emp.id === slip)} onClose={() => setSlip(null)} />
+      )}
     </div>
   );
 }
