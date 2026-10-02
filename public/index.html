@@ -1263,6 +1263,10 @@ function monthStats(db, mk) {
 
 /* Chi phí theo loại, xếp đúng thứ tự như báo cáo mẫu (theo chữ sau "Chi phí ") */
 const catKey = (nm) => noAccent(String(nm).replace(/^Chi phí\s+/i, '')).toLowerCase();
+/* Tên loại để HIỆN: bỏ chữ "Chi phí" ở đầu cho gọn, và luôn viết hoa chữ cái đầu —
+   tên KiotViet kiểu "Chi phí trả phí Booking" cắt ra sẽ thành "trả phí Booking", nhìn không ra gì. */
+const capFirst = (t) => String(t).charAt(0).toUpperCase() + String(t).slice(1);
+const catLabel = (nm) => capFirst(String(nm || '').replace(/^Chi phí\s+/i, '').trim() || String(nm || ''));
 function catBreak(db, mk) {
   const st = monthStats(db, mk);
   const by = {};
@@ -1511,7 +1515,7 @@ function buildReport(db, mk) {
   L.push('━━━━━━━━━━');
   L.push('📋 CHI TIẾT CHI PHÍ TRONG THÁNG');
   L.push('💸 TỔNG CHI: ' + moneyD(st.chi));
-  cats.forEach(c => L.push(c.e + ' ' + c.cat + ': ' + moneyD(c.amount)));
+  cats.forEach(c => L.push(c.e + ' ' + capFirst(c.cat) + ': ' + moneyD(c.amount)));
   L.push('━━━━━━━━━━');
   L.push('📊 LŨY KẾ LỢI NHUẬN ' + y);
   let acc = 0;
@@ -1615,7 +1619,7 @@ function ReportPage() {
               {cats.slice(0, 6).map(c => (
                 <div key={c.cat} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 0', fontSize: 12.5 }}>
                   <i style={{ width: 10, height: 10, borderRadius: 3, background: c.c, flex: '0 0 10px' }} />
-                  <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--txt-2)' }}>{c.cat.replace(/^Chi phí\s+/, '')}</span>
+                  <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--txt-2)' }}>{catLabel(c.cat)}</span>
                   <b className="mono">{c.pct.toFixed(1).replace('.', ',')}%</b>
                 </div>
               ))}
@@ -1699,7 +1703,7 @@ function ExpensePage() {
         <Stat label="Số loại chi" value={cats.length} icon={<span>📋</span>}
           sub={st.chiRows.length + ' phiếu chi'} />
         <Stat label="Khoản lớn nhất" value={biggest ? short(biggest.amount) : '—'} icon={<span>{biggest ? biggest.e : '—'}</span>}
-          sub={biggest ? biggest.cat.replace(/^Chi phí\s+/, '') + ' · ' + biggest.pct.toFixed(0) + '% tổng chi' : ''} />
+          sub={biggest ? catLabel(biggest.cat) + ' · ' + biggest.pct.toFixed(0) + '% tổng chi' : ''} />
         <Stat label="Chi / Thu" value={(st.thu ? st.chi / st.thu * 100 : 0).toFixed(1).replace('.', ',') + '%'} icon={<span>⚖️</span>}
           sub={'Thu ' + short(st.thu) + ' · chi ' + short(st.chi)} />
       </div>
@@ -1713,7 +1717,7 @@ function ExpensePage() {
                 border: '1px solid var(--line)', borderRadius: 12, padding: '10px 13px',
                 background: j.d > 0 ? 'var(--red-wash)' : 'var(--green-wash)', minWidth: 190, flex: '1 1 190px',
               }}>
-                <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 3 }}>{j.e} {j.cat.replace(/^Chi phí\s+/, '')}</div>
+                <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 3 }}>{j.e} {catLabel(j.cat)}</div>
                 <div style={{ fontSize: 17, fontWeight: 800, color: j.d > 0 ? 'var(--red)' : 'var(--green)' }} className="mono">
                   {j.d > 0 ? '+' : ''}{j.d.toFixed(0)}%
                 </div>
@@ -1729,7 +1733,7 @@ function ExpensePage() {
           <div className="card-h"><div><h3>Chi phí theo loại</h3><p>Tên loại lấy nguyên từ sổ quỹ KiotViet</p></div></div>
           <div className="card-b">
             <Bars onPick={setPick} rows={cats.map(c => ({
-              key: c.cat, label: c.cat.replace(/^Chi phí\s+/, ''), emoji: c.e, value: c.amount, pct: c.pct, color: c.c, cat: c.cat,
+              key: c.cat, label: catLabel(c.cat), emoji: c.e, value: c.amount, pct: c.pct, color: c.c, cat: c.cat,
             }))} />
           </div>
         </div>
@@ -1742,7 +1746,7 @@ function ExpensePage() {
       </div>
 
       {pick && (
-        <Modal wide title={pick.emoji + ' ' + pick.cat} sub={mLabel(mk) + ' · ' + moneyD(pick.value) + ' · ' + pick.pct.toFixed(1).replace('.', ',') + '% tổng chi'}
+        <Modal wide title={pick.emoji + ' ' + capFirst(pick.cat)} sub={mLabel(mk) + ' · ' + moneyD(pick.value) + ' · ' + pick.pct.toFixed(1).replace('.', ',') + '% tổng chi'}
           onClose={() => setPick(null)} foot={<button className="btn" onClick={() => setPick(null)}>Đóng</button>}>
           <div className="eyebrow" style={{ marginBottom: 8 }}>Cả năm {y}</div>
           <Columns data={trend} height={150} active={mParse(mk).m - 1}
@@ -1771,7 +1775,6 @@ function ExpensePage() {
 }
 
 /* ===================== TRANG 3 — P&L THEO NĂM ===================== */
-const capFirst = (t) => String(t).charAt(0).toUpperCase() + String(t).slice(1);
 /* Số trong bảng P&L: đơn vị triệu, một số lẻ — mọi cột cùng một kiểu thì mắt so được theo chiều dọc */
 const mil = (v) => (n0(v) ? (v / 1e6).toLocaleString('vi-VN', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : '');
 
@@ -1820,7 +1823,7 @@ function PnlPage() {
     const by = {};
     const add = (g, item) => { (by[g] = by[g] || []).push(item); };
     cats.forEach(c => add(c.g, {
-      key: c.cat, label: capFirst(c.cat.replace(/^Chi phí\s+/, '')), e: c.e, total: c.total,
+      key: c.cat, label: catLabel(c.cat), e: c.e, total: c.total,
       vals: monthCats.map(mc => (mc.find(x => x.cat === c.cat) || {}).amount || 0),
     }));
     if (ys.tot.salary) add('Nhân sự', {
@@ -3614,7 +3617,7 @@ function DataPage() {
                 {dayRows.map(r => (
                   <tr key={r.id}>
                     <td className="mono" style={{ whiteSpace: 'nowrap' }}>{r.code || '—'}</td>
-                    <td><span className={'tag ' + (r.type === 'thu' ? 't-green' : 't-red')}>{r.type === 'thu' ? 'Thu' : 'Chi'}</span> <span className="hint">{r.cat}</span></td>
+                    <td><span className={'tag ' + (r.type === 'thu' ? 't-green' : 't-red')}>{r.type === 'thu' ? 'Thu' : 'Chi'}</span> <span className="hint">{capFirst(r.cat)}</span></td>
                     <td>{r.note}</td>
                     <td className="r mono" style={{ color: r.type === 'thu' ? 'var(--green)' : 'var(--red)', fontWeight: 600 }}>
                       {(r.type === 'thu' ? '+' : '−') + money(r.amount)}
