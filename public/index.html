@@ -1374,6 +1374,16 @@ function cloneWithValues(el) {
   return c;
 }
 
+/* Độ nét ảnh chụp: gấp 3 lần kích thước trên màn hình — gửi qua Zalo, sếp phóng to vẫn đọc rõ
+   chữ trong bảng rộng. Chỉ hạ xuống khi vượt giới hạn trình duyệt vẽ được: iPhone/iPad chỉ
+   ~16 triệu điểm ảnh một ảnh, máy khác cho nhiều hơn; cạnh dài nhất không quá 16.000 điểm. */
+const IS_IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const shotScale = (w, h) => {
+  const budget = IS_IOS ? 15e6 : 40e6;
+  const s = Math.min(3, Math.sqrt(budget / Math.max(1, w * h)), 16000 / Math.max(w, h, 1));
+  return Math.max(1, s);
+};
+
 /* Chụp một vùng màn hình thành ảnh PNG. title: dòng tiêu đề thêm ở đầu ảnh (khi chụp cả trang) */
 async function shotPng(el, title) {
   await loadPdfLibs();
@@ -1396,9 +1406,7 @@ async function shotPng(el, title) {
   document.body.appendChild(box);
   try {
     await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-    /* iPhone không vẽ được ảnh quá ~16 triệu điểm ảnh — trang dài thì hạ độ nét xuống cho vừa */
-    const area = box.offsetWidth * box.offsetHeight;
-    const scale = Math.max(1, Math.min(2, Math.sqrt(15e6 / Math.max(1, area))));
+    const scale = shotScale(box.offsetWidth, box.offsetHeight);
     const canvas = await window.html2canvas(box, { scale, backgroundColor: '#F7F5F4', useCORS: true, logging: false });
     return await new Promise((ok, err) => canvas.toBlob(b => (b ? ok(b) : err(new Error('Không tạo được ảnh'))), 'image/png'));
   } finally { box.remove(); }
@@ -2543,7 +2551,7 @@ const saveBlob = (blob, name) => {
 
 /* Chụp phiếu lương thành ảnh: vẽ phiếu HTML ra một khung ẩn rồi chụp bằng html2canvas
    (chữ tiếng Việt do chính trình duyệt vẽ nên không lỗi dấu). Dùng chung cho PDF và copy ảnh. */
-async function slipCanvas(db, mk, row) {
+async function slipCanvas(db, mk, row, scale = 2) {
   const box = document.createElement('div');
   box.style.cssText = 'position:fixed;left:-12000px;top:0;width:794px;background:#fff';
   document.body.appendChild(box);
@@ -2553,7 +2561,7 @@ async function slipCanvas(db, mk, row) {
     ReactDOM.flushSync(() => root.render(<Payslip db={db} mk={mk} row={row} qrSrc={qr} print />));
     await Promise.all(Array.from(box.querySelectorAll('img')).map(im => im.complete ? 0
       : new Promise(r => { im.onload = im.onerror = r; setTimeout(r, 4000); })));
-    return await window.html2canvas(box.firstChild, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false });
+    return await window.html2canvas(box.firstChild, { scale, backgroundColor: '#ffffff', useCORS: true, logging: false });
   } finally {
     root.unmount(); box.remove();
   }
@@ -2571,7 +2579,8 @@ async function slipPdf(db, mk, row) {
 /* Phiếu lương → ảnh PNG (để copy dán qua Zalo) */
 async function slipPng(db, mk, row) {
   await loadPdfLibs();
-  const canvas = await slipCanvas(db, mk, row);
+  /* Ảnh gửi Zalo: nét gấp 3 (PDF giữ gấp 2 cho file nhẹ) */
+  const canvas = await slipCanvas(db, mk, row, 3);
   return new Promise((ok, err) => canvas.toBlob(b => (b ? ok(b) : err(new Error('Không tạo được ảnh'))), 'image/png'));
 }
 
