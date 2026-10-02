@@ -859,6 +859,7 @@ const CAT_META = {
   'Chi phí mua công cụ dụng cụ':      { e: '🧰', c: '#5FB894', g: 'Vận hành' },
   'Chi phí trả tiền thuê xe':         { e: '🚗', c: '#4A8FD4', g: 'Vận hành' },
   'Văn phòng':                        { e: '🏢', c: '#8D96A3', g: 'Quản lý' },
+  'Tạm ứng lương':                    { e: '💵', c: '#A99BF0', g: 'Nhân sự' },
 };
 const CAT_DEF = { e: '💼', c: '#8D96A3', g: 'Khác' };
 const catMeta = (nm) => CAT_META[nm] || CAT_DEF;
@@ -1218,11 +1219,19 @@ const payBase = (db, mk, emp) => {
   return { ov, hours, gross, resp, base: gross + resp, bonus: n0(ov.bonus) };
 };
 
-/* Chi phí lương tạm tính của tháng công mk — dùng cho báo cáo lãi lỗ khi chưa chốt */
+/* Lương gộp của tháng công mk: phần công ty trả, chưa trừ gì (lương công + phụ cấp + thưởng) */
 const grossOf = (db, mk) => (db.employees || []).reduce((sum, e) => {
   if (!paidThisMonth(db, mk, e)) return sum;
   const p = payBase(db, mk, e);
   return sum + p.base + p.bonus;
+}, 0);
+/* LƯƠNG TẠM TÍNH = tổng THỰC NHẬN tạm tính: lương gộp − BHXH − thuế TNCN − tạm ứng.
+   Đây là số tiền lương CÒN PHẢI TRẢ — tạm ứng đã chi ra rồi thì không tính lại ở đây,
+   vì phiếu tạm ứng trong sổ quỹ đã nằm trong Tổng chi. Dùng cho lãi lỗ khi tháng chưa chốt. */
+const netOf = (db, mk) => (db.employees || []).reduce((sum, e) => {
+  if (!paidThisMonth(db, mk, e)) return sum;
+  const p = payBase(db, mk, e);
+  return sum + p.base + p.bonus - n0(p.ov.bhxh) - n0(p.ov.tncn) - n0(p.ov.advance);
 }, 0);
 
 /* Tạm ứng app tự tìm được trong sổ quỹ cho một người trong một tháng */
@@ -1261,12 +1270,12 @@ function monthStats(db, mk) {
   const claimed = claimedIds(db);
   const rows = rowsOfMonth(db, mk);
   const thu = rows.filter(x => x.type === 'thu').reduce((a, b) => a + b.amount, 0);
-  /* Tạm ứng lương là khoản ứng trước, không phải chi phí — nó đã bị trừ ở bảng lương.
-     Cộng vào tổng chi nữa là trừ hai lần. */
-  const chiRows = rows.filter(x => x.type === 'chi' && x.cat !== ADVANCE_CAT && !claimed.has(x.id));
+  /* Phiếu tạm ứng lương là tiền ĐÃ CHI ra thật nên nằm trong tổng chi; phần lương còn lại
+     (thực nhận, đã trừ tạm ứng) mới là "lương tạm tính" bên dưới — không bị trừ hai lần. */
+  const chiRows = rows.filter(x => x.type === 'chi' && !claimed.has(x.id));
   const chi = chiRows.reduce((a, b) => a + b.amount, 0);
   const close = (db.closes || {})[mk] || null;
-  const salary = close ? close.amount : grossOf(db, mk);
+  const salary = close ? close.amount : netOf(db, mk);
   const profit = thu - chi - salary;
   /* ---- CẢNH BÁO TRÙNG LƯƠNG ----
      Phiếu chi loại "Chi phí Lương" chưa tháng công nào nhận thì ĐANG bị tính vào tổng chi,
@@ -1277,8 +1286,8 @@ function monthStats(db, mk) {
      tính (từ 50% trở lên) — cỡ đó thì gần như chắc chắn là tiền lương của một tháng công. */
   const salaryVouchers = rows.filter(x => x.type === 'chi' && x.cat === SALARY_CAT && !claimed.has(x.id));
   const vSum = salaryVouchers.reduce((a, b) => a + b.amount, 0);
-  const gross0 = grossOf(db, mk);
-  const orphan = (gross0 && vSum >= gross0 * 0.5) ? salaryVouchers : [];
+  const net0 = netOf(db, mk);
+  const orphan = (net0 > 0 && vSum >= net0 * 0.5) ? salaryVouchers : [];
   return { mk, thu, chi, chiRows, salary, profit, closed: !!close, close, orphan, empty: rows.length === 0 };
 }
 
@@ -1628,7 +1637,7 @@ function buildReport(db, mk) {
   L.push('📘 TỔNG QUAN');
   L.push('💰 TỔNG THU: ' + moneyD(st.thu));
   L.push('💸 TỔNG CHI: ' + moneyD(st.chi));
-  L.push('📊 CHI PHÍ LƯƠNG ' + (st.closed ? 'ĐÃ CHỐT' : 'TẠM TÍNH') + ': ' + moneyD(st.salary));
+  L.push('📊 ' + (st.closed ? 'LƯƠNG ĐÃ CHỐT' : 'LƯƠNG TẠM TÍNH (THỰC NHẬN)') + ': ' + moneyD(st.salary));
   L.push((st.profit >= 0 ? '👍' : '👎') + ' LỢI NHUẬN: ' + moneyD(st.profit));
   L.push('━━━━━━━━━━');
   L.push('📋 CHI TIẾT CHI PHÍ TRONG THÁNG');
@@ -1712,8 +1721,8 @@ function ReportPage() {
           sub={<><Delta cur={st.thu} prev={prev.thu} /> so tháng trước</>} />
         <Stat label="Tổng chi" value={money(st.chi)} icon={<span>💸</span>} tone="red"
           sub={<><Delta cur={st.chi} prev={prev.chi} invert /> so tháng trước</>} />
-        <Stat label={'Chi phí lương ' + (st.closed ? 'đã chốt' : 'tạm tính')} value={money(st.salary)} icon={<span>📊</span>} tone="violet"
-          sub={<>{grossOf(db, mk) ? hrs(Object.values((db.timesheet || {})[mk] || {}).reduce((a, r) => a + Object.values(r).reduce((x, z) => x + (+z || 0), 0), 0)) + ' giờ công' : 'chưa nhập công'}</>} />
+        <Stat label={st.closed ? 'Lương đã chốt' : 'Lương tạm tính (thực nhận)'} value={money(st.salary)} icon={<span>📊</span>} tone="violet"
+          sub={st.closed ? 'số thực chi khi chốt' : grossOf(db, mk) ? 'gộp ' + short(grossOf(db, mk)) + ' − BHXH, TNCN, tạm ứng' : 'chưa nhập công'} />
         <Stat hero label="Lợi nhuận" value={money(st.profit)} icon={<span>{st.profit >= 0 ? '👍' : '👎'}</span>}
           sub={<>Biên {margin.toFixed(1).replace('.', ',')}% · <Delta cur={st.profit} prev={lastY.profit} suffix={'so T' + m + '/' + (y - 1)} /></>} />
       </div>
@@ -1934,7 +1943,8 @@ function PnlPage() {
   const live = ys.months.filter(s => !s.empty);
 
   /* Chi phí gom theo nhóm (Nhân sự, Bán hàng...) — mặc định chỉ hiện tổng nhóm, bấm mới xổ ra.
-     Lương theo bảng công đứng chung nhóm Nhân sự với phiếu chi lương/BHXH trong sổ quỹ. */
+     Lương tạm tính (thực nhận, đã trừ tạm ứng) đứng chung nhóm Nhân sự với phiếu chi lương /
+     BHXH / tạm ứng trong sổ quỹ. */
   const [open, setOpen] = useState({});
   const groups = useMemo(() => {
     const monthCats = ys.months.map(s => catBreak(db, s.mk));
@@ -1945,7 +1955,7 @@ function PnlPage() {
       vals: monthCats.map(mc => (mc.find(x => x.cat === c.cat) || {}).amount || 0),
     }));
     if (ys.tot.salary) add('Nhân sự', {
-      key: '__salary', label: 'Lương theo bảng công', e: '📊', total: ys.tot.salary,
+      key: '__salary', label: 'Lương còn trả (thực nhận)', e: '📊', total: ys.tot.salary,
       vals: ys.months.map(s => s.salary), marks: ys.months.map(s => !!s.salary && !s.closed),
     });
     return Object.keys(by).map(g => {
@@ -2043,7 +2053,7 @@ function PnlPage() {
         </div>
         <div className="card-b" style={{ paddingTop: 10, borderTop: '1px solid var(--line-soft)' }}>
           <div className="hint">
-            Dấu <b>*</b> là lương tạm tính theo bảng công (tháng đó chưa bấm “Chốt đã chi lương”). Rê chuột vào một ô để xem số đầy đủ.
+            Dấu <b>*</b> là lương tạm tính = thực nhận, đã trừ BHXH, TNCN và tạm ứng (tháng đó chưa bấm “Chốt đã chi lương”). Tạm ứng nằm ở dòng Tạm ứng lương. Rê chuột vào một ô để xem số đầy đủ.
           </div>
         </div>
       </div>
@@ -2293,6 +2303,7 @@ function TimesheetPage() {
   const dayTotal = (d) => emps.reduce((a, e) => a + (Number((cells[e.id] || {})[d]) || 0), 0);
   const grandH = emps.reduce((a, e) => a + rowTotal(e), 0);
   const grandMoney = seePay ? grossOf(db, mk) : 0;
+  const grandNet = seePay ? netOf(db, mk) : 0;
   const pnTotal = emps.reduce((a, e) => a + (Number((cells[e.id] || {})[PN]) || 0), 0);
 
   /* Bảng này gõ số liên tục — mũi tên và Enter phải đi được giữa các ô như Excel,
@@ -2327,8 +2338,8 @@ function TimesheetPage() {
       <div className="stats">
         <Stat label="Tổng giờ công" value={hrs(grandH)} icon={<Ic.clock size={13} />} sub={emps.length + ' người có công'} />
         {seePay
-          ? <Stat label="Lương gộp phải trả" value={money(grandMoney)} icon={<span>📊</span>} tone="violet"
-            sub="Đây chính là dòng 'chi phí lương' trong báo cáo" />
+          ? <Stat label="Lương tạm tính (thực nhận)" value={money(grandNet)} icon={<span>📊</span>} tone="violet"
+            sub={'Lương gộp ' + money(grandMoney) + ' − BHXH, TNCN, tạm ứng'} />
           : <Stat label="Số người có công" value={emps.length} icon={<span>👥</span>}
             sub="Đơn giá và thành tiền chỉ chủ xem được" />}
         <Stat label="Giờ công bình quân" value={emps.length ? hrs(grandH / emps.length) : '0'} icon={<span>👤</span>} sub="mỗi người / tháng" />
@@ -2884,7 +2895,7 @@ function PayrollPage() {
 
       {slip && <PayslipModal db={db} mk={mk} row={rows.find(r => r.emp.id === slip.emp.id) || slip} onClose={() => setSlip(null)} />}
 
-      {closing && <CloseModal mk={mk} gross={tot.gross} onClose={() => setClosing(false)}
+      {closing && <CloseModal mk={mk} gross={tot.net} onClose={() => setClosing(false)}
         onDone={(amount, ids) => { closeMonth(mk, amount, ids); setClosing(false); toast('Đã chốt lương ' + mLabel(mk).toLowerCase()); }} />}
     </div>
   );
