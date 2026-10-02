@@ -400,6 +400,27 @@ table.tb.pay tbody tr:hover .nm{background:#FBFAF9}
 table.tb.pay tfoot .nm{background:#FBFAF9}
 .pay-in{width:104px;padding:5px 8px;font-size:12.5px}
 
+/* ================= COPY ẢNH ================= */
+/* Nút copy luôn nằm cuối hàng tiêu đề thẻ */
+.card-h .card-shot{order:99;margin-left:auto}
+.card-h:has(.sp) .card-shot{margin-left:0}
+.shot-btn{box-shadow:none;border:1px solid var(--line);color:var(--txt-2)}
+/* Khung chụp ảnh: nằm ngoài màn hình, tắt hết hiệu ứng, bỏ khung cuộn để hiện đủ bảng */
+.shot{position:fixed;left:-30000px;top:0;padding:16px;background:var(--canvas);font-family:var(--sans);color:var(--txt)}
+.shot *{animation:none !important;transition:none !important}
+.shot .card,.shot .stat{box-shadow:0 1px 2px rgba(20,24,28,.06),0 4px 12px rgba(20,24,28,.06) !important}
+.shot .scroll-x,.shot .ts-wrap,.shot .modal-b{overflow:visible !important;max-height:none !important}
+.shot .modal{max-height:none !important;box-shadow:none !important;max-width:none !important}
+.shot .btn,.shot .x,.shot .modal-f,.shot .shot-btn{display:none !important}
+.shot .page{padding:0 !important}
+/* Ô nhập / ô chọn trong ảnh hiện như chữ thường, không có khung */
+.shot input,.shot select{border:none !important;background:none !important;box-shadow:none !important;
+  padding:0 !important;-webkit-appearance:none;appearance:none;color:var(--txt) !important;font-weight:600}
+.shot select{text-align:right}
+.shot input::placeholder{color:transparent}
+.shot-title{font-size:20px;font-weight:800;letter-spacing:-.02em;margin:2px 2px 12px}
+.shot-foot{margin-top:10px;font-size:11.5px;color:var(--txt-3);text-align:right}
+
 /* ================= BIỂU ĐỒ ================= */
 .chart-wrap{padding:8px 18px 18px}
 .bar-row{display:flex;align-items:center;gap:12px;padding:6px 0;border-radius:9px;transition:background .16s}
@@ -1326,7 +1347,103 @@ const BANKS = [
 const bankName = (bin) => (BANKS.find(b => b.bin === bin) || {}).name || bin || '—';
 
 /* ===================== MẢNH GHÉP GIAO DIỆN ===================== */
-function Modal({ title, sub, wide, onClose, children, foot }) {
+/* ===================== COPY ẢNH ĐỂ GỬI ZALO =====================
+   Mọi thẻ (card) có nút "Copy ảnh" ở góc tiêu đề, thanh trên cùng có "Copy ảnh trang".
+   Cách chụp: nhân bản vùng cần chụp ra một khung ẩn rộng đủ chỗ (bảng phải kéo ngang như bảng
+   lương thì vẫn chụp đủ mọi cột), ẩn nút bấm, thêm dòng "chụp lúc…" ở đáy, rồi html2canvas. */
+
+/* Nhân bản phần tử, giữ lại giá trị đang gõ trong ô nhập (cloneNode không mang theo value) */
+function cloneWithValues(el) {
+  const c = el.cloneNode(true);
+  const a = el.querySelectorAll('input,select,textarea'), b = c.querySelectorAll('input,select,textarea');
+  a.forEach((x, i) => {
+    const y = b[i]; if (!y) return;
+    if (x.tagName === 'SELECT') { y.value = x.value; Array.from(y.options).forEach(o => { if (o.value === x.value) o.setAttribute('selected', ''); }); }
+    else if (x.type === 'checkbox') { if (x.checked) y.setAttribute('checked', ''); }
+    else { y.setAttribute('value', x.value); if (!x.value) y.removeAttribute('placeholder'); }
+  });
+  return c;
+}
+
+/* Chụp một vùng màn hình thành ảnh PNG. title: dòng tiêu đề thêm ở đầu ảnh (khi chụp cả trang) */
+async function shotPng(el, title) {
+  await loadPdfLibs();
+  /* Bề rộng thật: rộng bằng vùng đó, cộng phần đang bị giấu trong các khung cuộn ngang */
+  let w = el.offsetWidth;
+  el.querySelectorAll('.scroll-x,.ts-wrap').forEach(sc => { w = Math.max(w, el.offsetWidth + sc.scrollWidth - sc.clientWidth); });
+  const box = document.createElement('div');
+  box.className = 'shot';
+  box.style.width = (w + 32) + 'px';
+  if (title) {
+    const h = document.createElement('div'); h.className = 'shot-title'; h.textContent = title;
+    box.appendChild(h);
+  }
+  box.appendChild(cloneWithValues(el));
+  const ft = document.createElement('div');
+  const now = new Date();
+  ft.className = 'shot-foot';
+  ft.textContent = COMPANY.name + ' · chụp lúc ' + pad2(now.getHours()) + ':' + pad2(now.getMinutes()) + ' ngày ' + dFull(todayKey());
+  box.appendChild(ft);
+  document.body.appendChild(box);
+  try {
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    /* iPhone không vẽ được ảnh quá ~16 triệu điểm ảnh — trang dài thì hạ độ nét xuống cho vừa */
+    const area = box.offsetWidth * box.offsetHeight;
+    const scale = Math.max(1, Math.min(2, Math.sqrt(15e6 / Math.max(1, area))));
+    const canvas = await window.html2canvas(box, { scale, backgroundColor: '#F7F5F4', useCORS: true, logging: false });
+    return await new Promise((ok, err) => canvas.toBlob(b => (b ? ok(b) : err(new Error('Không tạo được ảnh'))), 'image/png'));
+  } finally { box.remove(); }
+}
+
+/* Đưa ảnh vào bộ nhớ tạm. Ảnh phải được đưa cho ClipboardItem dưới dạng promise NGAY trong lúc
+   bấm (Safari/iPhone chỉ cho ghi bộ nhớ tạm trong lúc người dùng đang bấm).
+   Không copy được: điện thoại mở bảng Chia sẻ (chọn Zalo), máy tính tải ảnh về. */
+async function copyImage(pngPromise, fileName, toast) {
+  pngPromise.catch(() => { });
+  try {
+    if (!navigator.clipboard || !window.ClipboardItem) throw new Error('no-clipboard');
+    await navigator.clipboard.write([new window.ClipboardItem({ 'image/png': pngPromise })]);
+    toast('Đã copy ảnh — mở Zalo rồi dán (Ctrl+V, hoặc giữ ô chat → Dán)');
+  } catch (e) {
+    try {
+      const blob = await pngPromise;
+      const name = noAccent(fileName).replace(/[^\w .-]+/g, '').trim() + '.png';
+      const file = new File([blob], name, { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: fileName }).catch(() => { });
+      } else {
+        saveBlob(blob, name);
+        toast('Trình duyệt này không cho copy ảnh — đã tải ảnh về máy, kéo thả vào Zalo');
+      }
+    } catch (e2) { toast(e2.message || 'Không tạo được ảnh'); }
+  }
+}
+
+/* Nút copy ảnh dùng chung. pick(nút) → phần tử cần chụp */
+function ShotBtn({ pick, name, title, label, cls: c }) {
+  const { toast } = useApp();
+  const [busy, setBusy] = useState(false);
+  const go = async (e) => {
+    const el = pick(e.currentTarget);
+    if (!el) return;
+    setBusy(true);
+    const h = el.querySelector('h3');
+    await copyImage(shotPng(el, title), name || (h && h.textContent) || 'Cliff House', toast);
+    setBusy(false);
+  };
+  return (
+    <button className={cls('btn sm shot-btn', c)} disabled={busy} onClick={go} title="Copy ảnh để dán qua Zalo">
+      <Ic.copy size={13} /> {busy ? 'Đang chụp…' : (label || 'Copy ảnh')}
+    </button>
+  );
+}
+/* Nút ở góc mỗi thẻ: chụp nguyên thẻ đó */
+const CopyCard = () => {
+  const pick = (b) => b.closest('.card');
+  return <ShotBtn pick={pick} cls="card-shot" />;
+};
+
+function Modal({ title, sub, wide, onClose, children, foot, shot }) {
   useEffect(() => {
     const k = (e) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', k);
@@ -1337,7 +1454,8 @@ function Modal({ title, sub, wide, onClose, children, foot }) {
       <div className={cls('modal', wide && 'wide')}>
         <div className="modal-h">
           <div style={{ minWidth: 0 }}><h3>{title}</h3>{sub && <p>{sub}</p>}</div>
-          <button className="x" onClick={onClose} aria-label="Đóng"><Ic.x size={17} /></button>
+          {shot && <ShotBtn pick={(b) => b.closest('.modal')} name={String(title || 'Cliff House')} />}
+          <button className="x" onClick={onClose} aria-label="Đóng" style={shot ? { marginLeft: 6 } : null}><Ic.x size={17} /></button>
         </div>
         <div className="modal-b">{children}</div>
         {foot && <div className="modal-f">{foot}</div>}
@@ -1568,7 +1686,7 @@ function ReportPage() {
   return (
     <div>
       <div className="card" style={{ marginBottom: 16 }}>
-        <div className="card-h">
+        <div className="card-h"><CopyCard />
           <div><h3>Kỳ báo cáo</h3><p>Chọn tháng cần xem — mọi con số bên dưới đổi theo</p></div>
           <div className="sp">
             <MonthPick value={mk} onChange={setMk} />
@@ -1602,7 +1720,7 @@ function ReportPage() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.15fr) minmax(0,1fr)', gap: 16, alignItems: 'start' }} className="rp-grid">
         <div className="card" style={{ margin: 0 }}>
-          <div className="card-h">
+          <div className="card-h"><CopyCard />
             <div><h3>Lợi nhuận 12 tháng năm {y}</h3><p>Lũy kế tới {mLabel(mk).toLowerCase()}: <b style={{ color: cumTotal >= 0 ? 'var(--green)' : 'var(--red)' }}>{moneyD(cumTotal)}</b></p></div>
           </div>
           <div className="chart-wrap">
@@ -1612,7 +1730,7 @@ function ReportPage() {
         </div>
 
         <div className="card" style={{ margin: 0 }}>
-          <div className="card-h"><div><h3>Cơ cấu chi phí</h3><p>{cats.length} loại chi trong tháng</p></div></div>
+          <div className="card-h"><CopyCard /><div><h3>Cơ cấu chi phí</h3><p>{cats.length} loại chi trong tháng</p></div></div>
           <div className="card-b" style={{ display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap' }}>
             <Donut slices={cats.slice(0, 8).map(c => ({ value: c.amount, color: c.c }))} />
             <div style={{ flex: 1, minWidth: 180 }}>
@@ -1630,7 +1748,7 @@ function ReportPage() {
       </div>
 
       <div className="card" style={{ marginTop: 16 }}>
-        <div className="card-h">
+        <div className="card-h"><CopyCard />
           <div><h3>Báo cáo để gửi</h3><p>Đúng khuôn đang dùng — bấm Chép rồi dán thẳng vào Zalo, Telegram, email</p></div>
           <div className="sp"><button className="btn pri" onClick={copy}><Ic.copy size={15} /> Chép báo cáo</button></div>
         </div>
@@ -1691,7 +1809,7 @@ function ExpensePage() {
   return (
     <div>
       <div className="card">
-        <div className="card-h">
+        <div className="card-h"><CopyCard />
           <div><h3>Kỳ xem</h3><p>Bấm vào một loại chi để xem từng phiếu và đường đi cả năm</p></div>
           <div className="sp"><MonthPick value={mk} onChange={setMk} /></div>
         </div>
@@ -1710,7 +1828,7 @@ function ExpensePage() {
 
       {!!jumps.length && (
         <div className="card">
-          <div className="card-h"><div><h3>Biến động đáng để ý</h3><p>Loại chi tăng/giảm trên 25% so với {mLabel(mAdd(mk, -1)).toLowerCase()}</p></div></div>
+          <div className="card-h"><CopyCard /><div><h3>Biến động đáng để ý</h3><p>Loại chi tăng/giảm trên 25% so với {mLabel(mAdd(mk, -1)).toLowerCase()}</p></div></div>
           <div className="card-b" style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             {jumps.map(j => (
               <div key={j.cat} style={{
@@ -1730,7 +1848,7 @@ function ExpensePage() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.5fr) minmax(0,1fr)', gap: 16, alignItems: 'start' }} className="rp-grid">
         <div className="card" style={{ margin: 0 }}>
-          <div className="card-h"><div><h3>Chi phí theo loại</h3><p>Tên loại lấy nguyên từ sổ quỹ KiotViet</p></div></div>
+          <div className="card-h"><CopyCard /><div><h3>Chi phí theo loại</h3><p>Tên loại lấy nguyên từ sổ quỹ KiotViet</p></div></div>
           <div className="card-b">
             <Bars onPick={setPick} rows={cats.map(c => ({
               key: c.cat, label: catLabel(c.cat), emoji: c.e, value: c.amount, pct: c.pct, color: c.c, cat: c.cat,
@@ -1738,7 +1856,7 @@ function ExpensePage() {
           </div>
         </div>
         <div className="card" style={{ margin: 0 }}>
-          <div className="card-h"><div><h3>Gom theo nhóm</h3><p>Tiền thật chảy về đâu</p></div></div>
+          <div className="card-h"><CopyCard /><div><h3>Gom theo nhóm</h3><p>Tiền thật chảy về đâu</p></div></div>
           <div className="card-b bars-tight">
             <Bars rows={groups.map(g => ({ key: g.g, label: g.g, value: g.amount, pct: g.pct, color: g.color }))} />
           </div>
@@ -1746,7 +1864,7 @@ function ExpensePage() {
       </div>
 
       {pick && (
-        <Modal wide title={pick.emoji + ' ' + capFirst(pick.cat)} sub={mLabel(mk) + ' · ' + moneyD(pick.value) + ' · ' + pick.pct.toFixed(1).replace('.', ',') + '% tổng chi'}
+        <Modal wide shot title={pick.emoji + ' ' + capFirst(pick.cat)} sub={mLabel(mk) + ' · ' + moneyD(pick.value) + ' · ' + pick.pct.toFixed(1).replace('.', ',') + '% tổng chi'}
           onClose={() => setPick(null)} foot={<button className="btn" onClick={() => setPick(null)}>Đóng</button>}>
           <div className="eyebrow" style={{ marginBottom: 8 }}>Cả năm {y}</div>
           <Columns data={trend} height={150} active={mParse(mk).m - 1}
@@ -1847,7 +1965,7 @@ function PnlPage() {
   return (
     <div>
       <div className="card">
-        <div className="card-h">
+        <div className="card-h"><CopyCard />
           <div><h3>Báo cáo lãi lỗ năm {y}</h3><p>Doanh thu · chi phí từng loại · lợi nhuận, 12 tháng trên một bảng</p></div>
           <div className="sp">
             <select className="inp" style={{ width: 'auto', fontWeight: 600 }} value={y} onChange={e => setY(+e.target.value)}>
@@ -1869,7 +1987,7 @@ function PnlPage() {
       </div>
 
       <div className="card">
-        <div className="card-h"><div><h3>Lợi nhuận theo tháng</h3><p>Cột xám là tháng chưa có dữ liệu</p></div></div>
+        <div className="card-h"><CopyCard /><div><h3>Lợi nhuận theo tháng</h3><p>Cột xám là tháng chưa có dữ liệu</p></div></div>
         <div className="chart-wrap">
           <Columns data={ys.months.map(s => ({ label: 'T' + s.m, value: s.empty ? 0 : s.profit, empty: s.empty }))}
             colorOf={(d) => d.empty ? 'var(--line)' : d.value >= 0 ? 'var(--brand)' : 'var(--red)'} />
@@ -1877,7 +1995,7 @@ function PnlPage() {
       </div>
 
       <div className="card">
-        <div className="card-h">
+        <div className="card-h"><CopyCard />
           <div><h3>Bảng P&amp;L chi tiết</h3><p>Đơn vị: triệu đồng · bấm vào từng nhóm để xem các loại chi bên trong</p></div>
           <div className="sp">
             <button className="btn sm" onClick={() => setOpen(allOpen ? {} : Object.fromEntries(groups.map(g => [g.g, true])))}>
@@ -2048,7 +2166,7 @@ function PayTable({ mk }) {
 
   return (
     <div className="card">
-      <div className="card-h">
+      <div className="card-h"><CopyCard />
         <div><h3>Bảng lương {mLabel(mk).toLowerCase()}</h3>
           <p>Giờ và ngày công lấy từ bảng công phía trên · BHXH, thuế TNCN, tạm ứng, thưởng điền tay</p></div>
         <div className="sp">
@@ -2196,7 +2314,7 @@ function TimesheetPage() {
   return (
     <div>
       <div className="card">
-        <div className="card-h">
+        <div className="card-h"><CopyCard />
           <div><h3>Bảng công {mLabel(mk).toLowerCase()}</h3>
             <p>{narrow ? 'Bấm vào tên người để chấm công cho người đó' : 'Gõ thẳng số giờ vào ô · Enter hoặc mũi tên để đi tiếp · để trống là ngày nghỉ'}</p></div>
           <div className="sp">
@@ -2556,37 +2674,17 @@ function PayslipModal({ db, mk, row, onClose }) {
     } catch (e) { toast(e.message || 'Không tạo được PDF'); }
     setBusy('');
   };
-  /* Copy ảnh phiếu để dán qua Zalo. Ảnh phải được đưa cho ClipboardItem dưới dạng promise NGAY
-     trong lúc bấm (Safari/iPhone chỉ cho ghi bộ nhớ tạm trong lúc người dùng đang bấm).
-     Máy không cho copy ảnh: điện thoại thì mở bảng Chia sẻ (chọn Zalo), máy tính thì tải ảnh về. */
-  const copyImage = async () => {
+  /* Copy ảnh phiếu để dán qua Zalo (cách copy + phương án dự phòng: xem copyImage) */
+  const copySlip = async () => {
     setBusy('img');
-    const png = slipPng(db, mk, row);
-    png.catch(() => { });
-    try {
-      if (!navigator.clipboard || !window.ClipboardItem) throw new Error('no-clipboard');
-      await navigator.clipboard.write([new window.ClipboardItem({ 'image/png': png })]);
-      toast('Đã copy ảnh phiếu lương — mở Zalo rồi dán (Ctrl+V / giữ ô chat → Dán)');
-    } catch (e) {
-      try {
-        const blob = await png;
-        const name = noAccent(slipFileName(row, mk)).replace(/\.pdf$/, '.png');
-        const file = new File([blob], name, { type: 'image/png' });
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({ files: [file], title: 'Phiếu lương ' + row.emp.name }).catch(() => { });
-        } else {
-          saveBlob(blob, name);
-          toast('Trình duyệt này không cho copy ảnh — đã tải ảnh về máy, kéo thả vào Zalo');
-        }
-      } catch (e2) { toast(e2.message || 'Không tạo được ảnh'); }
-    }
+    await copyImage(slipPng(db, mk, row), slipFileName(row, mk).replace(/\.pdf$/, ''), toast);
     setBusy('');
   };
   return (
     <Modal wide title={'Phiếu lương · ' + row.emp.name} sub={mLabel(mk) + ' · thực nhận ' + moneyD(row.net)} onClose={onClose}
       foot={<>
         <button className="btn" onClick={onClose}>Đóng</button>
-        <button className="btn" disabled={!!busy} onClick={copyImage}><Ic.copy size={14} /> {busy === 'img' ? 'Đang tạo ảnh…' : 'Copy ảnh'}</button>
+        <button className="btn" disabled={!!busy} onClick={copySlip}><Ic.copy size={14} /> {busy === 'img' ? 'Đang tạo ảnh…' : 'Copy ảnh'}</button>
         <button className="btn pri" disabled={!!busy} onClick={download}><Ic.down size={14} /> {busy === 'pdf' ? 'Đang tạo PDF…' : 'Tải PDF'}</button>
       </>}>
       <div className="ps-paper"><Payslip db={db} mk={mk} row={row} /></div>
@@ -2634,7 +2732,7 @@ function PayrollPage() {
   return (
     <div>
       <div className="card">
-        <div className="card-h">
+        <div className="card-h"><CopyCard />
           <div>
             <h3>Bảng lương {mLabel(mk).toLowerCase()}</h3>
             <p>Lương công + phụ cấp + thưởng − BHXH − thuế TNCN − tạm ứng = số nằm trong mã QR</p>
@@ -2681,7 +2779,7 @@ function PayrollPage() {
       </div>
 
       <div className="card">
-        <div className="card-h"><div><h3>Chi tiết từng người</h3><p>Bấm mã QR để phóng to · tích ô cuối khi đã chuyển xong</p></div></div>
+        <div className="card-h"><CopyCard /><div><h3>Chi tiết từng người</h3><p>Bấm mã QR để phóng to · tích ô cuối khi đã chuyển xong</p></div></div>
         <div className="scroll-x">
           <table className="tb" style={{ minWidth: 1070 }}>
             <thead>
@@ -2880,7 +2978,7 @@ function StaffPage() {
   return (
     <div>
       <div className="card">
-        <div className="card-h">
+        <div className="card-h"><CopyCard />
           <div><h3>Nhân viên</h3><p>{(db.employees || []).filter(e => e.status === 'active').length} người đang làm · đơn giá giờ dùng để tính lương</p></div>
           <div className="sp">
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: 'var(--txt-2)', fontWeight: 600 }}>
@@ -3454,7 +3552,7 @@ function RobotCard({ beat }) {
   const months = Object.entries((beat && beat.months) || {}).sort();
   return (
     <div className="card">
-      <div className="card-h">
+      <div className="card-h"><CopyCard />
         <div><h3>Robot tự nạp sổ quỹ</h3><p>Kéo từ KiotViet mỗi giờ 7h–23h và lúc 0h30 · chạy trên GitHub</p></div>
         <div className="sp"><span className={'tag ' + tone}>{label}</span></div>
       </div>
@@ -3559,7 +3657,7 @@ function DataPage() {
       </div>
 
       <div className="card">
-        <div className="card-h">
+        <div className="card-h"><CopyCard />
           <div><h3>Thu chi theo ngày</h3><p>Bấm vào một ngày để xem từng phiếu · ô gạch chéo là ngày chưa có dữ liệu</p></div>
           <div className="sp"><MonthPick value={mk} onChange={(v) => { setMk(v); setDay(null); }} min={first ? first.slice(0, 7) : undefined} /></div>
         </div>
@@ -3596,7 +3694,7 @@ function DataPage() {
       </div>
 
       <div className="card">
-        <div className="card-h"><div><h3>Các tháng đang có</h3><p>{cash.length} phiếu · bấm để xem lịch tháng đó</p></div></div>
+        <div className="card-h"><CopyCard /><div><h3>Các tháng đang có</h3><p>{cash.length} phiếu · bấm để xem lịch tháng đó</p></div></div>
         <div className="card-b" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {months.map(o => (
             <button key={o.k} className={cls('btn sm', o.k === mk && 'pri')} onClick={() => { setMk(o.k); setDay(null); }}>
@@ -3608,7 +3706,7 @@ function DataPage() {
       </div>
 
       {day && byDay[day] && (
-        <Modal wide title={'Ngày ' + dFull(day)} onClose={() => setDay(null)}
+        <Modal wide shot title={'Ngày ' + dFull(day)} onClose={() => setDay(null)}
           sub={'Thu ' + moneyD(byDay[day].thu) + ' · Chi ' + moneyD(byDay[day].chi) + ' · ' + byDay[day].n + ' phiếu'}>
           <div className="scroll-x">
             <table className="tb">
@@ -3668,7 +3766,7 @@ function SettingsPage() {
       <RobotCard beat={db.robot} />
 
       <div className="card">
-        <div className="card-h">
+        <div className="card-h"><CopyCard />
           <div><h3>Nạp tay bằng file Excel</h3><p>Dự phòng khi robot lỗi, hoặc để nạp các tháng trước 9/2026</p></div>
           <div className="sp"><button className="btn pri" onClick={() => setImp(true)}><Ic.down size={15} /> Nạp file sổ quỹ</button></div>
         </div>
@@ -3693,7 +3791,7 @@ function SettingsPage() {
       </div>
 
       <div className="card">
-        <div className="card-h"><div><h3>Dữ liệu đang có</h3><p>{months.length} tháng · {(db.cash || []).length} phiếu thu chi · {(db.employees || []).length} nhân viên</p></div></div>
+        <div className="card-h"><CopyCard /><div><h3>Dữ liệu đang có</h3><p>{months.length} tháng · {(db.cash || []).length} phiếu thu chi · {(db.employees || []).length} nhân viên</p></div></div>
         <div className="scroll-x">
           <table className="tb">
             <thead><tr><th>Tháng</th><th className="r">Phiếu</th><th className="r">Tổng thu</th><th className="r">Tổng chi</th><th className="r">Lương</th><th>Trạng thái</th></tr></thead>
@@ -3719,7 +3817,7 @@ function SettingsPage() {
       </div>
 
       <div className="card">
-        <div className="card-h"><div><h3>Loại chi phí</h3><p>Lấy nguyên tên từ KiotViet — bảng dưới chỉ gán emoji, màu và nhóm cho dễ nhìn</p></div></div>
+        <div className="card-h"><CopyCard /><div><h3>Loại chi phí</h3><p>Lấy nguyên tên từ KiotViet — bảng dưới chỉ gán emoji, màu và nhóm cho dễ nhìn</p></div></div>
         <div className="scroll-x">
           <table className="tb">
             <thead><tr><th style={{ width: 50 }}></th><th>Tên loại trong KiotViet</th><th>Nhóm</th><th className="r">Tổng cả năm nay</th></tr></thead>
@@ -3742,7 +3840,7 @@ function SettingsPage() {
       </div>
 
       <div className="card">
-        <div className="card-h"><div><h3>Công cụ dữ liệu</h3><p>{DEMO ? 'Chế độ demo — mọi thứ nằm trong trình duyệt này' : 'Tác động thẳng lên Firestore của ' + FB_CFG.projectId}</p></div></div>
+        <div className="card-h"><CopyCard /><div><h3>Công cụ dữ liệu</h3><p>{DEMO ? 'Chế độ demo — mọi thứ nằm trong trình duyệt này' : 'Tác động thẳng lên Firestore của ' + FB_CFG.projectId}</p></div></div>
         <div className="card-b" style={{ display: 'flex', gap: 9, flexWrap: 'wrap' }}>
           {DEMO ? (
             <button className="btn danger" onClick={() => {
@@ -4075,6 +4173,8 @@ function App() {
             </div>
             <div className="top-right">
               {DEMO && <span className="tag t-amber">DEMO — dữ liệu mẫu</span>}
+              <ShotBtn pick={() => document.querySelector('.page')} label="Copy ảnh trang"
+                name={cur ? cur.t[0] : BRAND.name} title={cur ? cur.t[0] : BRAND.name} />
               <span className="top-date">{pad2(today.getDate())}/{pad2(today.getMonth() + 1)}/{today.getFullYear()}</span>
             </div>
           </div>
