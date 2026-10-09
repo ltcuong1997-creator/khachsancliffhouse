@@ -92,7 +92,7 @@ function diffRows(oldRows, newRows) {
     if (a.amount !== r.amount) ch.push(`số tiền ${fmtMoney(a.amount)} → ${fmtMoney(r.amount)} đ`);
     if (a.cat !== r.cat) ch.push(`loại "${a.cat}" → "${r.cat}"`);
     if (a.note !== r.note) ch.push(`nội dung "${a.note}" → "${r.note}"`);
-    if (ch.length) out.push('SỬA ' + (r.code || id) + ': ' + ch.join(' · '));
+    if (ch.length) out.push('SỬA ' + (r.code || id) + ' (ngày ' + r.date + ' · ' + r.cat + ' · "' + r.note + '"): ' + ch.join(' · '));
   }
   for (const [id, a] of o) if (!n.has(id)) out.push('BỎ (đã huỷ/xoá bên KiotViet) ' + descRow(a));
   return out;
