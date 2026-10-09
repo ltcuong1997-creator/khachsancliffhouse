@@ -77,6 +77,27 @@ function toRow(x) {
   };
 }
 
+/* Mô tả khác biệt giữa phiếu đang lưu và phiếu vừa kéo về, theo mã phiếu */
+const fmtMoney = (v) => Number(v || 0).toLocaleString('vi-VN');
+const descRow = (r) => `${r.code || r.id} ngày ${r.date} ${r.type} ${fmtMoney(r.amount)} đ · ${r.cat} · "${r.note}"`;
+function diffRows(oldRows, newRows) {
+  const out = [];
+  const o = new Map(oldRows.map(r => [r.id, r])), n = new Map(newRows.map(r => [r.id, r]));
+  for (const [id, r] of n) {
+    const a = o.get(id);
+    if (!a) { out.push('THÊM ' + descRow(r)); continue; }
+    const ch = [];
+    if (a.date !== r.date) ch.push(`ngày ${a.date} → ${r.date}`);
+    if (a.type !== r.type) ch.push(`${a.type} → ${r.type}`);
+    if (a.amount !== r.amount) ch.push(`số tiền ${fmtMoney(a.amount)} → ${fmtMoney(r.amount)} đ`);
+    if (a.cat !== r.cat) ch.push(`loại "${a.cat}" → "${r.cat}"`);
+    if (a.note !== r.note) ch.push(`nội dung "${a.note}" → "${r.note}"`);
+    if (ch.length) out.push('SỬA ' + (r.code || id) + ': ' + ch.join(' · '));
+  }
+  for (const [id, a] of o) if (!n.has(id)) out.push('BỎ (đã huỷ/xoá bên KiotViet) ' + descRow(a));
+  return out;
+}
+
 const monthsIn = (from, to) => {
   const out = [];
   for (let d = monthStart(from); d <= to; d = nextMonth(d)) out.push(d.slice(0, 7));
@@ -173,6 +194,11 @@ function remapCloses(closes, oldById, newRows, removedIds) {
         const next = keep.concat(fresh).sort((x, y) => (x.date + x.id).localeCompare(y.date + y.id));
         const kept = drop.filter(r => fresh.some(f => f.id === r.id)).length;
         console.log(`  ${mk}: có sẵn ${cur.length} phiếu · giữ ${keep.length} ngoài khoảng · thay ${drop.length} → ${fresh.length} (trùng mã ${kept})`);
+        /* So với lần nạp trước: phiếu nào mới, phiếu nào mất (bị huỷ/xoá), phiếu nào bị sửa */
+        const diff = diffRows(drop, fresh);
+        diff.forEach(d => console.log('    ' + d));
+        if (diff.length) beat.changes = (beat.changes || []).concat(diff.map(d => mk + ' · ' + d)).slice(0, 50);
+        else console.log('    (không phiếu nào thay đổi)');
         writes.push(['ch_cash', mk, { rows: next }]);
       }
       const { changes, lost } = remapCloses(closes, oldById, rows, removed);
