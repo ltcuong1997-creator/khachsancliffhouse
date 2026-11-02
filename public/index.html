@@ -1176,11 +1176,6 @@ async function wipeCloud() {
 /* ===================== TÍNH TOÁN ===================== */
 /* Phiếu chi lương đã được "nhận" về một tháng công nào đó thì KHÔNG còn là chi phí
    của tháng nó nằm trong sổ quỹ nữa — nếu không sẽ trừ lương hai lần. */
-const claimedIds = (db) => {
-  const s = new Set();
-  Object.values(db.closes || {}).forEach(c => (c.ids || []).forEach(id => s.add(id)));
-  return s;
-};
 
 const rowsOfMonth = (db, mk) => (db.cash || []).filter(x => String(x.date).slice(0, 7) === mk);
 
@@ -1265,30 +1260,30 @@ const payRow = (db, mk, emp) => {
   };
 };
 
-/* Bộ số của một tháng — dùng chung cho cả ba trang báo cáo */
+/* Bộ số của một tháng — dùng chung cho cả ba trang báo cáo.
+   LƯƠNG:
+   - Chưa chốt: trừ "lương tạm tính" = tổng thực nhận còn phải trả (bảng lương − BHXH − TNCN − tạm ứng).
+   - Đã chốt:   KHÔNG trừ lương tạm tính nữa. Phiếu chi lương (ghi cuối chính tháng đó) và phiếu tạm
+                ứng đã đổ về từ KiotViet, nằm sẵn trong Tổng chi — trừ thêm là trùng, lãi bị âm. */
 function monthStats(db, mk) {
-  const claimed = claimedIds(db);
   const rows = rowsOfMonth(db, mk);
   const thu = rows.filter(x => x.type === 'thu').reduce((a, b) => a + b.amount, 0);
-  /* Phiếu tạm ứng lương là tiền ĐÃ CHI ra thật nên nằm trong tổng chi; phần lương còn lại
-     (thực nhận, đã trừ tạm ứng) mới là "lương tạm tính" bên dưới — không bị trừ hai lần. */
-  const chiRows = rows.filter(x => x.type === 'chi' && !claimed.has(x.id));
+  const chiRows = rows.filter(x => x.type === 'chi');
   const chi = chiRows.reduce((a, b) => a + b.amount, 0);
   const close = (db.closes || {})[mk] || null;
-  const salary = close ? close.amount : netOf(db, mk);
+  /* Tiền lương đã chi trong sổ quỹ tháng này: phiếu chi lương + phiếu tạm ứng */
+  const salaryRows = chiRows.filter(x => x.cat === SALARY_CAT || x.cat === ADVANCE_CAT);
+  const salaryCash = salaryRows.reduce((a, b) => a + b.amount, 0);
+  const salary = close ? 0 : netOf(db, mk);
   const profit = thu - chi - salary;
   /* ---- CẢNH BÁO TRÙNG LƯƠNG ----
-     Phiếu chi loại "Chi phí Lương" chưa tháng công nào nhận thì ĐANG bị tính vào tổng chi,
-     trong khi lương tạm tính cũng đang bị trừ -> có nguy cơ trừ hai lần.
-     Nhưng loại này cũng hay dùng để trả thợ thời vụ / cộng tác viên, số nhỏ, không phải
-     lương nhân viên fulltime. Kêu ầm lên mỗi tháng thì người dùng sẽ quen tay bỏ qua, tới
-     lúc trùng thật cũng không ai nhìn. Nên chỉ báo khi số tiền đủ lớn so với lương tạm
-     tính (từ 50% trở lên) — cỡ đó thì gần như chắc chắn là tiền lương của một tháng công. */
-  const salaryVouchers = rows.filter(x => x.type === 'chi' && x.cat === SALARY_CAT && !claimed.has(x.id));
+     Tháng CHƯA chốt mà sổ quỹ đã có phiếu chi lương cỡ lớn (từ 50% lương tạm tính trở lên) thì gần
+     như chắc chắn đã trả lương rồi — đang bị trừ hai lần cho tới khi bấm Chốt. Phiếu nhỏ thường là
+     tiền thợ thời vụ / cộng tác viên nên không kêu. */
+  const salaryVouchers = chiRows.filter(x => x.cat === SALARY_CAT);
   const vSum = salaryVouchers.reduce((a, b) => a + b.amount, 0);
-  const net0 = netOf(db, mk);
-  const orphan = (net0 > 0 && vSum >= net0 * 0.5) ? salaryVouchers : [];
-  return { mk, thu, chi, chiRows, salary, profit, closed: !!close, close, orphan, empty: rows.length === 0 };
+  const orphan = (!close && salary > 0 && vSum >= salary * 0.5) ? salaryVouchers : [];
+  return { mk, thu, chi, chiRows, salary, salaryCash, salaryRows, profit, closed: !!close, close, orphan, empty: rows.length === 0 };
 }
 
 /* Chi phí theo loại, xếp đúng thứ tự như báo cáo mẫu (theo chữ sau "Chi phí ") */
@@ -1645,7 +1640,9 @@ function buildReport(db, mk) {
   L.push('📘 TỔNG QUAN');
   L.push('💰 TỔNG THU: ' + moneyD(st.thu));
   L.push('💸 TỔNG CHI: ' + moneyD(st.chi));
-  L.push('📊 ' + (st.closed ? 'LƯƠNG ĐÃ CHỐT' : 'LƯƠNG TẠM TÍNH (THỰC NHẬN)') + ': ' + moneyD(st.salary));
+  L.push(st.closed
+    ? '📊 LƯƠNG ĐÃ CHỐT (đã nằm trong tổng chi): ' + moneyD(st.salaryCash)
+    : '📊 LƯƠNG TẠM TÍNH (THỰC NHẬN): ' + moneyD(st.salary));
   L.push((st.profit >= 0 ? '👍' : '👎') + ' LỢI NHUẬN: ' + moneyD(st.profit));
   L.push('━━━━━━━━━━');
   L.push('📋 CHI TIẾT CHI PHÍ TRONG THÁNG');
@@ -1717,10 +1714,10 @@ function ReportPage() {
       {st.empty && <div className="banner"><Ic.warn size={16} /><div><b>Tháng này chưa có dữ liệu sổ quỹ.</b> Vào Cấu hình bấm Đồng bộ KiotViet để kéo về.</div></div>}
       {!!st.orphan.length && !st.closed && (
         <div className="banner"><Ic.warn size={16} /><div>
-          <b>Cảnh báo trừ lương hai lần.</b> Tháng này có {st.orphan.length} phiếu chi loại "{SALARY_CAT}"
-          ({moneyD(st.orphan.reduce((a, b) => a + b.amount, 0))}) đang được tính vào TỔNG CHI, trong khi
-          lương tạm tính cũng đang bị trừ. Nếu đây là tiền lương của tháng trước thì sang trang
-          Bảng lương tháng đó bấm <b>Chốt đã chi lương</b> để gán về đúng kỳ.
+          <b>Cảnh báo trừ lương hai lần.</b> Sổ quỹ tháng này đã có {st.orphan.length} phiếu chi loại "{SALARY_CAT}"
+          ({moneyD(st.orphan.reduce((a, b) => a + b.amount, 0))}) nằm trong TỔNG CHI, trong khi lương tạm tính
+          cũng đang bị trừ. Đã trả lương tháng này rồi thì sang trang Bảng lương bấm <b>Chốt đã chi lương</b> —
+          báo cáo sẽ bỏ lương tạm tính, chỉ tính theo phiếu trong sổ quỹ.
         </div></div>
       )}
 
@@ -1729,8 +1726,8 @@ function ReportPage() {
           sub={<><Delta cur={st.thu} prev={prev.thu} /> so tháng trước</>} />
         <Stat label="Tổng chi" value={money(st.chi)} icon={<span>💸</span>} tone="red"
           sub={<><Delta cur={st.chi} prev={prev.chi} invert /> so tháng trước</>} />
-        <Stat label={st.closed ? 'Lương đã chốt' : 'Lương tạm tính (thực nhận)'} value={money(st.salary)} icon={<span>📊</span>} tone="violet"
-          sub={st.closed ? 'số thực chi khi chốt' : grossOf(db, mk) ? 'gộp ' + short(grossOf(db, mk)) + ' − BHXH, TNCN, tạm ứng' : 'chưa nhập công'} />
+        <Stat label={st.closed ? 'Lương đã chốt (theo sổ quỹ)' : 'Lương tạm tính (thực nhận)'} value={money(st.closed ? st.salaryCash : st.salary)} icon={<span>📊</span>} tone="violet"
+          sub={st.closed ? 'phiếu lương + tạm ứng · đã nằm trong Tổng chi' : grossOf(db, mk) ? 'gộp ' + short(grossOf(db, mk)) + ' − BHXH, TNCN, tạm ứng' : 'chưa nhập công'} />
         <Stat hero label="Lợi nhuận" value={money(st.profit)} icon={<span>{st.profit >= 0 ? '👍' : '👎'}</span>}
           sub={<>Biên {margin.toFixed(1).replace('.', ',')}% · <Delta cur={st.profit} prev={lastY.profit} suffix={'so T' + m + '/' + (y - 1)} /></>} />
       </div>
@@ -2061,7 +2058,8 @@ function PnlPage() {
         </div>
         <div className="card-b" style={{ paddingTop: 10, borderTop: '1px solid var(--line-soft)' }}>
           <div className="hint">
-            Dấu <b>*</b> là lương tạm tính = thực nhận, đã trừ BHXH, TNCN và tạm ứng (tháng đó chưa bấm “Chốt đã chi lương”). Tạm ứng nằm ở dòng Tạm ứng lương. Rê chuột vào một ô để xem số đầy đủ.
+            Dấu <b>*</b> là lương tạm tính = thực nhận, đã trừ BHXH, TNCN và tạm ứng (tháng đó chưa bấm “Chốt đã chi lương”).
+            Tháng đã chốt thì không còn tạm tính — lương nằm ở dòng Lương và Tạm ứng lương lấy từ sổ quỹ. Rê chuột vào một ô để xem số đầy đủ.
           </div>
         </div>
       </div>
@@ -2761,7 +2759,7 @@ function PayrollPage() {
             <MonthPick value={mk} onChange={setMk} />
             {st.closed
               ? <>
-                <span className="tag t-green"><Ic.lock size={12} /> Đã chốt · {moneyD(st.close.amount)}</span>
+                <span className="tag t-green"><Ic.lock size={12} /> Đã chốt</span>
                 <button className="btn sm" onClick={() => { openMonth(mk); toast('Đã mở chốt — tháng này quay lại dùng lương tạm tính'); }}>
                   <Ic.unlock size={13} /> Mở chốt
                 </button>
@@ -2778,8 +2776,9 @@ function PayrollPage() {
         <div className="banner" style={{ background: 'var(--green-wash)', borderColor: '#BFE3D0', color: '#0B5E3E' }}>
           <Ic.check size={16} />
           <div>
-            <b>Tháng này đã chốt.</b> Lợi nhuận {mLabel(mk).toLowerCase()} đang dùng số lương thực chi {moneyD(st.close.amount)}
-            {st.close.ids && st.close.ids.length ? <> (từ {st.close.ids.length} phiếu chi trong sổ quỹ, đã được loại khỏi chi phí của tháng chúng nằm trong để không trừ hai lần)</> : null}.
+            <b>Tháng này đã chốt.</b> Báo cáo {mLabel(mk).toLowerCase()} không còn trừ lương tạm tính — chi phí lương lấy theo
+            phiếu chi lương + tạm ứng trong sổ quỹ tháng này: <b>{moneyD(st.salaryCash)}</b> (bảng lương sau BHXH, TNCN:
+            {' '}{moneyD(tot.net + tot.advance)}{st.salaryCash === tot.net + tot.advance ? ' — khớp' : ' — lệch ' + (st.salaryCash > tot.net + tot.advance ? '+' : '−') + moneyD(Math.abs(st.salaryCash - (tot.net + tot.advance)))}).
           </div>
         </div>
       )}
@@ -2904,85 +2903,65 @@ function PayrollPage() {
 
       {slip && <PayslipModal db={db} mk={mk} row={rows.find(r => r.emp.id === slip.emp.id) || slip} onClose={() => setSlip(null)} />}
 
-      {closing && <CloseModal mk={mk} gross={tot.net} onClose={() => setClosing(false)}
+      {closing && <CloseModal mk={mk} payTotal={tot.net + tot.advance} onClose={() => setClosing(false)}
         onDone={(amount, ids) => { closeMonth(mk, amount, ids); setClosing(false); toast('Đã chốt lương ' + mLabel(mk).toLowerCase()); }} />}
     </div>
   );
 }
 
 /* ---- CHỐT ĐÃ CHI LƯƠNG ----
-   Lương tháng 8 thường tới ngày 10/9 mới chi, nên phiếu chi nằm ở sổ quỹ THÁNG 9.
-   Chốt là việc nhận phiếu chi đó về đúng tháng công: tháng 8 dùng số thực chi thay cho
-   số tạm tính, còn tháng 9 không bị tính khoản đó vào chi phí nữa. */
-function CloseModal({ mk, gross, onClose, onDone }) {
+   Phiếu chi lương tháng X được ghi CUỐI CHÍNH THÁNG X trên KiotViet, nên khi đã trả lương thì sổ quỹ
+   tháng X có đủ: phiếu chi lương + phiếu tạm ứng. Chốt = khoá bảng công/bảng lương và để báo cáo bỏ
+   lương tạm tính, tính lương theo đúng các phiếu đó (không trừ hai lần).
+   Hộp này chỉ đối chiếu cho chủ xem trước: bảng lương sau BHXH, TNCN có khớp tổng phiếu không. */
+function CloseModal({ mk, payTotal, onClose, onDone }) {
   const { db } = useApp();
-  const claimed = claimedIds(db);
-  const cands = useMemo(() => {
-    const out = [];
-    for (let i = 0; i <= 2; i++) {
-      rowsOfMonth(db, mAdd(mk, i)).forEach(r => {
-        if (r.type === 'chi' && r.cat === SALARY_CAT && !claimed.has(r.id)) out.push(r);
-      });
-    }
-    return out.sort((a, b) => a.date.localeCompare(b.date));
-  }, [db, mk]);
-  /* KHÔNG tự tích sẵn. Loại "Chi phí Lương" trong sổ quỹ hay lẫn tiền thợ thời vụ, tiền
-     cộng tác viên — tích sẵn rồi bấm cho nhanh là chốt nhầm một con số bé tí, lợi nhuận
-     tháng đó phình lên vô cớ. Không chọn gì thì mặc định giữ nguyên lương tạm tính. */
-  const [sel, setSel] = useState([]);
-  const [manual, setManual] = useState('');
-  const selSum = cands.filter(c => sel.includes(c.id)).reduce((a, b) => a + b.amount, 0);
-  const amount = manual !== '' ? n0(manual.replace(/\D/g, '')) : (selSum || gross);
-  const tog = (id) => setSel(s => s.includes(id) ? s.filter(x => x !== id) : s.concat(id));
-
+  const st = monthStats(db, mk);
+  const diff = st.salaryCash - payTotal;
   return (
     <Modal wide title={'Chốt lương ' + mLabel(mk).toLowerCase()}
-      sub="Chọn phiếu chi lương thực tế trong sổ quỹ — kể cả khi nó nằm ở tháng sau"
+      sub="Khoá bảng công và bảng lương · báo cáo bỏ lương tạm tính, tính lương theo phiếu trong sổ quỹ"
       onClose={onClose}
       foot={<>
         <button className="btn" onClick={onClose}>Huỷ</button>
-        <button className="btn pri" onClick={() => onDone(amount, sel)}>
-          <Ic.lock size={14} /> Chốt {moneyD(amount)}
+        <button className="btn pri" onClick={() => onDone(st.salaryCash, [])}>
+          <Ic.lock size={14} /> Chốt lương {mLabel(mk).toLowerCase()}
         </button>
       </>}>
-      <div className="banner" style={{ background: 'var(--blue-wash)', borderColor: '#C9DCF2', color: '#1C4D85' }}>
-        <Ic.warn size={16} />
-        <div>Lương tạm tính đang là <b>{moneyD(gross)}</b>. Chốt xong, lợi nhuận {mLabel(mk).toLowerCase()} sẽ dùng
-          số bên dưới, và những phiếu chi được chọn sẽ <b>không còn tính vào chi phí của tháng chúng nằm trong</b>.</div>
-      </div>
-
-      <div className="eyebrow" style={{ margin: '4px 0 8px' }}>Phiếu chi loại “{SALARY_CAT}” chưa gán tháng nào</div>
-      {!cands.length
-        ? <div className="empty" style={{ padding: 24 }}>
-          Không tìm thấy phiếu chi lương nào trong {mLabel(mk).toLowerCase()} và 2 tháng kế tiếp.<br />
-          Vẫn chốt được — số lương sẽ lấy đúng bằng lương tạm tính.
-        </div>
+      <table className="tb">
+        <tbody>
+          <tr><td>Bảng lương sau khi trừ BHXH, thuế TNCN</td><td className="r mono"><b>{money(payTotal)}</b></td></tr>
+          <tr><td>Phiếu chi lương + tạm ứng trong sổ quỹ {mLabel(mk).toLowerCase()}</td><td className="r mono"><b>{money(st.salaryCash)}</b></td></tr>
+          <tr><td>Chênh lệch</td><td className="r mono" style={{ color: diff ? 'var(--red)' : 'var(--green)', fontWeight: 700 }}>{diff ? (diff > 0 ? '+' : '−') + money(Math.abs(diff)) : 'khớp'}</td></tr>
+        </tbody>
+      </table>
+      {diff !== 0 && (
+        <div className="banner" style={{ marginTop: 12 }}><Ic.warn size={16} /><div>
+          {st.salaryCash === 0
+            ? <>Sổ quỹ {mLabel(mk).toLowerCase()} <b>chưa có phiếu chi lương nào</b>. Chốt bây giờ thì báo cáo tháng này sẽ không có chi phí lương. Nên chờ phiếu chi lương đổ về từ KiotViet rồi hãy chốt.</>
+            : <>Sổ quỹ đang {diff > 0 ? 'nhiều hơn' : 'ít hơn'} bảng lương <b>{moneyD(Math.abs(diff))}</b>. Kiểm tra lại phiếu chi lương / tạm ứng bên KiotViet,
+              hoặc số tạm ứng điền ở bảng lương. Vẫn chốt được — báo cáo sẽ lấy đúng theo sổ quỹ.</>}
+        </div></div>
+      )}
+      <div className="eyebrow" style={{ margin: '16px 0 8px' }}>Phiếu trong sổ quỹ {mLabel(mk).toLowerCase()}</div>
+      {!st.salaryRows.length
+        ? <div className="empty" style={{ padding: 20 }}>Chưa có phiếu loại “{SALARY_CAT}” hay “{ADVANCE_CAT}”.</div>
         : (
           <table className="tb">
-            <thead><tr><th style={{ width: 36 }}></th><th>Ngày</th><th>Nằm ở tháng</th><th>Diễn giải</th><th className="r">Số tiền</th></tr></thead>
+            <thead><tr><th>Ngày</th><th>Mã phiếu</th><th>Loại</th><th>Diễn giải</th><th className="r">Số tiền</th></tr></thead>
             <tbody>
-              {cands.map(c => (
-                <tr key={c.id} onClick={() => tog(c.id)} style={{ cursor: 'pointer' }}>
-                  <td><input type="checkbox" readOnly checked={sel.includes(c.id)} style={{ width: 17, height: 17, accentColor: 'var(--brand)' }} /></td>
+              {st.salaryRows.slice().sort((a, b) => a.date.localeCompare(b.date)).map(c => (
+                <tr key={c.id}>
                   <td className="mono">{dFull(c.date)}</td>
-                  <td>{c.date.slice(0, 7) === mk ? <span className="tag t-gray">cùng tháng</span> : <span className="tag t-blue">{mLabel(c.date.slice(0, 7))}</span>}</td>
+                  <td className="mono">{c.code || '—'}</td>
+                  <td>{catLabel(c.cat)}</td>
                   <td>{c.note}</td>
                   <td className="r mono"><b>{money(c.amount)}</b></td>
                 </tr>
               ))}
             </tbody>
-            <tfoot><tr><td colSpan="4">Đã chọn {sel.length} phiếu</td><td className="r mono">{money(selSum)}</td></tr></tfoot>
           </table>
         )}
-
-      <div className="fld" style={{ marginTop: 16 }}>
-        <label>Số lương chốt cho {mLabel(mk).toLowerCase()}</label>
-        <input className="inp num" inputMode="numeric" value={money(amount)}
-          onChange={e => setManual(e.target.value)} />
-        <div className="hint" style={{ marginTop: 5 }}>
-          Để nguyên là lấy tổng phiếu đã chọn{!selSum ? ' (hiện chưa chọn phiếu nào nên đang lấy lương tạm tính)' : ''}. Gõ đè nếu muốn con số khác.
-        </div>
-      </div>
     </Modal>
   );
 }
@@ -3824,7 +3803,7 @@ function SettingsPage() {
                     <td className="r mono">{rowsOfMonth(db, k).length}</td>
                     <td className="r mono">{s.thu ? short(s.thu) : '—'}</td>
                     <td className="r mono">{s.chi ? short(s.chi) : '—'}</td>
-                    <td className="r mono">{s.salary ? short(s.salary) : '—'}</td>
+                    <td className="r mono">{s.closed ? short(s.salaryCash) : s.salary ? short(s.salary) : '—'}</td>
                     <td>{s.empty ? <span className="tag t-gray">trống</span>
                       : s.closed ? <span className="tag t-green"><Ic.lock size={11} /> đã chốt</span>
                         : <span className="tag t-amber">tạm tính</span>}</td>
