@@ -20,3 +20,6 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           projectId: khachsancliffhouse
           channelId: live
+          # Ghim phiên bản: firebase-tools mới hơn đòi thêm quyền serviceusage.services.get mà
+          # service account deploy không có (lỗi 403 ngày 02/11/2026). 15.33.0 là bản deploy được.
+          firebaseToolsVersion: 15.33.0
