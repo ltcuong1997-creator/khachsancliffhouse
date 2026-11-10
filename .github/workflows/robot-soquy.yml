@@ -1,8 +1,9 @@
 # Robot sổ quỹ: kéo phiếu thu/chi KiotViet Hotel về Firestore (ch_cash). Code ở robot/soquy/.
 #
 # Lịch (GitHub tính giờ UTC, VN = UTC+7). Lịch CHỈ chạy khi file này đã nằm trên nhánh main.
-#   '0 0-16 * * *'  → mỗi giờ đúng từ 7h đến 23h giờ VN
-#   '30 17 * * *'   → 0h30 giờ VN, chốt số ngày hôm trước
+#   '17 0-16 * * *' → mỗi giờ (phút 17) từ 7h đến 23h giờ VN
+#   '37 17 * * *'   → 0h37 giờ VN, chốt số ngày hôm trước
+#   Không đặt đúng phút :00 — giờ đó GitHub đông, lịch hay bị trễ hoặc bỏ (đã gặp tháng 11/2026).
 # Push lên nhánh làm robot → tự CHẠY THỬ (không ghi gì).
 # Chạy tay: tab Actions → Robot sổ quỹ → Run workflow (sau khi đã merge vào main).
 #
@@ -11,8 +12,8 @@ name: Robot sổ quỹ
 
 on:
   schedule:
-    - cron: '0 0-16 * * *'
-    - cron: '30 17 * * *'
+    - cron: '17 0-16 * * *'
+    - cron: '37 17 * * *'
   push:
     branches: [claude/wizardly-maxwell-kzbqiy]
     paths: ['robot/soquy/**', '.github/workflows/robot-soquy.yml']
